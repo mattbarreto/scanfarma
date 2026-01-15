@@ -13,26 +13,28 @@ function App() {
         <Route path="/inventario" element={<Inventory />} />
       </Routes>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - Premium Style */}
       <nav className="bottom-nav">
         <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <span className="icon">📦</span>
-          <span>Cargar</span>
+          <span className="nav-icon">📦</span>
+          <span className="nav-label">Cargar</span>
         </NavLink>
         <NavLink to="/alertas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <span className="icon">🔔</span>
-          <span>Alertas</span>
+          <span className="nav-icon">🔔</span>
+          <span className="nav-label">Alertas</span>
         </NavLink>
         <NavLink to="/inventario" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <span className="icon">📋</span>
-          <span>Inventario</span>
+          <span className="nav-icon">📋</span>
+          <span className="nav-label">Inventario</span>
         </NavLink>
       </nav>
 
-      {/* Creator Credit */}
-      <footer className="app-footer">
-        Creado por <a href="https://matiasbarreto.com/" target="_blank" rel="noopener noreferrer">Matías Barreto</a>
-      </footer>
+      {/* Subtle branding - Separated from navigation */}
+      <div className="app-branding">
+        <a href="https://matiasbarreto.com/" target="_blank" rel="noopener noreferrer">
+          por Matías Barreto
+        </a>
+      </div>
     </BrowserRouter>
   )
 }
