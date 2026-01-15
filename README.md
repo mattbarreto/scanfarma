@@ -2,8 +2,11 @@
 
 > Sistema de control de vencimientos para farmacias
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/BADGE_ID/deploy-status)](https://app.netlify.com/)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://scanfarma.netlify.app/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**🔗 Demo en vivo:** [scanfarma.netlify.app](https://scanfarma.netlify.app/)
+
 
 ## 📋 Descripción
 
