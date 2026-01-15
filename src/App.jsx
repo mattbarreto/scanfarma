@@ -28,6 +28,11 @@ function App() {
           <span>Inventario</span>
         </NavLink>
       </nav>
+
+      {/* Creator Credit */}
+      <footer className="app-footer">
+        Creado por <a href="https://matiasbarreto.com/" target="_blank" rel="noopener noreferrer">Matías Barreto</a>
+      </footer>
     </BrowserRouter>
   )
 }
