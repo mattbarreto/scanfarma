@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Link } from 'react-router-dom'
 import LoadProduct from './pages/LoadProduct'
 import Alerts from './pages/Alerts'
 import Inventory from './pages/Inventory'
+import About from './pages/About'
 import './index.css'
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
         <Route path="/" element={<LoadProduct />} />
         <Route path="/alertas" element={<Alerts />} />
         <Route path="/inventario" element={<Inventory />} />
+        <Route path="/acerca" element={<About />} />
       </Routes>
 
       {/* Bottom Navigation - Premium Style */}
@@ -27,14 +29,11 @@ function App() {
           <span className="nav-icon">📋</span>
           <span className="nav-label">Inventario</span>
         </NavLink>
+        <NavLink to="/acerca" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <span className="nav-icon">ℹ️</span>
+          <span className="nav-label">Info</span>
+        </NavLink>
       </nav>
-
-      {/* Subtle branding - Separated from navigation */}
-      <div className="app-branding">
-        <a href="https://matiasbarreto.com/" target="_blank" rel="noopener noreferrer">
-          por Matías Barreto
-        </a>
-      </div>
     </BrowserRouter>
   )
 }
