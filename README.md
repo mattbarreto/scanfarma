@@ -31,7 +31,7 @@ ScanFarma automatiza el control de medicamentos vencidos o próximos a vencer, e
 
 ```bash
 # Clonar repositorio
-git clone https://github.com/YOUR_USERNAME/scanfarma.git
+git clone https://github.com/mattbarreto/scanfarma.git
 cd scanfarma
 
 # Instalar dependencias
@@ -189,4 +189,4 @@ Este proyecto está bajo la Licencia MIT. Ver [LICENSE](LICENSE) para más detal
 
 ## 📞 Soporte
 
-¿Problemas o sugerencias? Abrí un [issue](https://github.com/YOUR_USERNAME/scanfarma/issues).
+¿Problemas o sugerencias? Abrí un [issue](https://github.com/mattbarreto/scanfarma/issues).
