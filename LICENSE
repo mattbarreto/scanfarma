@@ -1,35 +1,27 @@
-MIT License
+SCANFARMA SOURCE AVAILABLE LICENSE
 
 Copyright (c) 2026 Matías Barreto
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. GRANT OF LICENSE
+This software is provided "as is" and is available for viewing and educational purposes only.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+2. COPYRIGHT
+The entire software (including but not limited to code, designs, and assets) is the property of Matías Barreto.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. RESTRICTIONS
+You may NOT:
+- Use this software for commercial purposes.
+- Redistribute copies of this software.
+- Modify and release this software.
+- Sublicense or sell this software.
 
----
+4. COMMERCIAL USE
+This software is available as a SaaS product.
+For commercial inquiries, licensing, or deployment, please contact:
 
-## Commercial Use
+   Matías Barreto
+   Email: matiasbarreto@gmail.com
+   Website: https://matiasbarreto.com
 
-For commercial licensing inquiries or to deploy this software for business use,
-please contact:
-
-**Matías Barreto**
-- Website: https://matiasbarreto.com
-- Email: matiasbarreto@gmail.com
-
-ScanFarma is available as a SaaS subscription for pharmacies.
-Visit https://scanfarma.netlify.app for more information.
+5. NO WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
