@@ -132,6 +132,7 @@ export default function LoadProduct() {
                     lot_number: lotNumber,
                     expiration_date: expirationDate,
                     quantity: quantity,
+                    quantity_remaining: quantity,  // Track remaining stock (for sales integration)
                     location: location || null
                 })
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { markBatchAsExpired, recordWaste } from '../lib/wasteService'
 
 export default function Alerts() {
     const [batches, setBatches] = useState([])
@@ -78,6 +79,25 @@ export default function Alerts() {
 
             showToast('Lote eliminado')
             fetchBatches()
+        } catch (err) {
+            console.error('Error:', err)
+            showToast('Error de conexión', 'error')
+        }
+    }
+
+    const handleMarkAsExpired = async (batch) => {
+        const action = batch.status === 'EXPIRED' ? 'vencido' : 'descartado'
+        if (!confirm(`¿Registrar este lote como ${action}? Esto lo sacará del inventario activo pero quedará en el historial para métricas.`)) return
+
+        try {
+            const result = await markBatchAsExpired(batch.id)
+
+            if (result.success) {
+                showToast(`Lote registrado como ${action}`)
+                fetchBatches()
+            } else {
+                showToast(result.error || 'Error al registrar', 'error')
+            }
         } catch (err) {
             console.error('Error:', err)
             showToast('Error de conexión', 'error')
@@ -183,16 +203,24 @@ export default function Alerts() {
                     <div className="alert-item-details">
                         <span>📦 Lote: {batch.lot_number}</span>
                         <span>📅 Vto: {formatDate(batch.expiration_date)}</span>
-                        <span>🔢 Cant: {batch.quantity}</span>
+                        <span>🔢 Cant: {batch.quantity_remaining || batch.quantity}</span>
                         {batch.location && <span>📍 {batch.location}</span>}
                     </div>
 
                     <div className="alert-item-actions">
                         <button
+                            className="btn btn-warning"
+                            onClick={() => handleMarkAsExpired(batch)}
+                            style={{ flex: 1 }}
+                        >
+                            📋 Registrar pérdida
+                        </button>
+                        <button
                             className="btn btn-danger"
                             onClick={() => handleDelete(batch.id)}
+                            style={{ flex: 0.5 }}
                         >
-                            🗑️ Eliminar
+                            🗑️
                         </button>
                     </div>
                 </div>

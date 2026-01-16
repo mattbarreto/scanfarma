@@ -28,3 +28,7 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Base de datos (no compartir estructura)
+supabase/migrations/
+

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 
 export default function About() {
-    const appVersion = '1.0.0'
-    const buildDate = '2025-01-15'
+    const appVersion = '2.0.0'
+    const buildDate = '2026-01-16'
 
     return (
         <div className="app-container">
@@ -20,11 +20,10 @@ export default function About() {
 
             {/* Purpose */}
             <div className="card">
-                <h3 className="about-section-title">📋 Propósito</h3>
+                <h3 className="about-section-title">📋 ¿Qué es ScanFarma?</h3>
                 <p className="about-text">
-                    Sistema de control de vencimientos para farmacias. Automatiza el seguimiento
-                    de medicamentos vencidos o próximos a vencer mediante escaneo de código de
-                    barras y OCR de fechas.
+                    Sistema de inteligencia de rotación para farmacias. Controla vencimientos,
+                    integra ventas automáticamente y genera insights para reducir pérdidas.
                 </p>
             </div>
 
@@ -34,10 +33,30 @@ export default function About() {
                 <ul className="about-list">
                     <li>📷 Escaneo de código de barras</li>
                     <li>📅 OCR de fechas de vencimiento</li>
-                    <li>🔔 Alertas automáticas</li>
-                    <li>📊 Gestión de inventario</li>
-                    <li>📱 Diseño mobile-first</li>
+                    <li>📥 Integración de ventas (FIFO)</li>
+                    <li>🧠 Inteligencia de rotación</li>
+                    <li>📊 Métricas y sugerencias</li>
+                    <li>🔔 Alertas inteligentes</li>
                 </ul>
+            </div>
+
+            {/* Commercial Info */}
+            <div className="card" style={{
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%)',
+                borderLeft: '4px solid var(--color-primary)'
+            }}>
+                <h3 className="about-section-title">💼 Para tu farmacia</h3>
+                <p className="about-text" style={{ marginBottom: 'var(--space-md)' }}>
+                    ScanFarma está disponible como servicio para farmacias.
+                    Reducí pérdidas por vencimientos y optimizá tu stock.
+                </p>
+                <a
+                    href="mailto:matiasbarreto@gmail.com?subject=Consulta%20ScanFarma"
+                    className="btn btn-primary"
+                    style={{ textDecoration: 'none', display: 'inline-flex' }}
+                >
+                    📧 Solicitar información
+                </a>
             </div>
 
             {/* Links */}
@@ -52,7 +71,7 @@ export default function About() {
                     >
                         <span className="about-link-icon">📦</span>
                         <span className="about-link-text">
-                            <strong>Repositorio oficial</strong>
+                            <strong>Código fuente</strong>
                             <small>github.com/mattbarreto/scanfarma</small>
                         </span>
                         <span className="about-link-arrow">→</span>
@@ -65,7 +84,7 @@ export default function About() {
                     >
                         <span className="about-link-icon">🌐</span>
                         <span className="about-link-text">
-                            <strong>Sitio web del desarrollador</strong>
+                            <strong>Desarrollador</strong>
                             <small>matiasbarreto.com</small>
                         </span>
                         <span className="about-link-arrow">→</span>
@@ -88,8 +107,8 @@ export default function About() {
 
             {/* Build Info */}
             <div className="about-footer">
-                <p>Versión {appVersion} • Build {buildDate}</p>
-                <p>© 2025 ScanFarma. MIT License.</p>
+                <p>Versión {appVersion} • {buildDate}</p>
+                <p>© 2026 Matías Barreto</p>
             </div>
         </div>
     )

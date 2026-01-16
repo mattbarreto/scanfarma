@@ -108,7 +108,7 @@ export default function Inventory() {
 
     const totalProducts = Object.keys(groupedByProduct).length
     const totalBatches = filteredBatches.length
-    const totalUnits = filteredBatches.reduce((sum, b) => sum + b.quantity, 0)
+    const totalUnits = filteredBatches.reduce((sum, b) => sum + (b.quantity_remaining || b.quantity), 0)
 
     return (
         <div className="app-container">
@@ -220,7 +220,7 @@ export default function Inventory() {
                                     <span>{getStatusIcon(batch.status)} </span>
                                     <span>Lote: {batch.lot_number}</span>
                                     <span style={{ color: 'var(--text-muted)', marginLeft: 'var(--space-sm)' }}>
-                                        (x{batch.quantity})
+                                        (x{batch.quantity_remaining || batch.quantity})
                                     </span>
                                 </div>
                                 <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>

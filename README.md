@@ -1,195 +1,84 @@
 # 💊 ScanFarma
 
-> Sistema de control de vencimientos para farmacias
+> Sistema de control de vencimientos e inteligencia de rotación para farmacias.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://scanfarma.netlify.app/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Deploy Status](https://api.netlify.com/api/v1/badges/scanfarma/deploy-status)](https://scanfarma.netlify.app)
 
-**🔗 Demo en vivo:** [scanfarma.netlify.app](https://scanfarma.netlify.app/)
+![ScanFarma Preview](public/og-image.png)
 
+## 🎯 Problema que resuelve
 
-## 📋 Descripción
+Las farmacias pierden dinero por productos vencidos. ScanFarma:
+- **Escanea** códigos de barras y fechas de vencimiento
+- **Alerta** automáticamente sobre productos próximos a vencer
+- **Integra** ventas para evitar alertas fantasma (FIFO automático)
+- **Analiza** patrones de pérdida y sugiere acciones preventivas
 
-ScanFarma automatiza el control de medicamentos vencidos o próximos a vencer, eliminando revisiones manuales exhaustivas y reduciendo errores humanos.
+## ✨ Características
 
-### Características principales
+- 📱 **PWA** - Funciona como app nativa en móviles
+- 📷 **Escaneo de código de barras** - BarcodeDetector API
+- 📅 **OCR de fechas** - Tesseract.js
+- 📊 **Dashboard de inteligencia** - Métricas y sugerencias
+- 🔔 **Notificaciones** - Alertas por email (próximamente)
+- 🌙 **Dark mode** - UI premium
 
-- 📷 **Escaneo de código de barras** - Identificación rápida de productos
-- 📅 **OCR de fechas** - Captura automática de fechas de vencimiento
-- 🔔 **Alertas automáticas** - Notificaciones de productos por vencer
-- 📱 **Mobile-first** - Optimizado para uso en dispositivos móviles
-- ⚡ **Tiempo objetivo** - < 10 segundos por producto
+## 🛠️ Tech Stack
 
----
-
-## 🚀 Quick Start
-
-### Prerrequisitos
-
-- Node.js 18+
-- npm o yarn
-- Cuenta en [Supabase](https://supabase.com) (gratis)
-
-### Instalación
-
-```bash
-# Clonar repositorio
-git clone https://github.com/mattbarreto/scanfarma.git
-cd scanfarma
-
-# Instalar dependencias
-npm install
-
-# Configurar variables de entorno
-cp .env.example .env.local
-# Editar .env.local con tus credenciales de Supabase
-
-# Ejecutar en desarrollo
-npm run dev
-```
-
-### Variables de entorno
-
-Crear archivo `.env.local` en la raíz del proyecto:
-
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-> ⚠️ **Nunca commitear credenciales**. El archivo `.env.local` está en `.gitignore`.
-
----
-
-## 🗄️ Base de datos
-
-### Configuración de Supabase
-
-1. Crear proyecto en [supabase.com](https://supabase.com)
-2. Ir a **SQL Editor**
-3. Ejecutar el script en `supabase/migrations/001_initial_schema.sql`
-
-### Esquema
-
-```
-products          # Productos registrados
-├── id            # UUID
-├── barcode       # Código de barras único
-├── name          # Nombre del producto
-└── brand         # Marca (opcional)
-
-batches           # Lotes con fecha de vencimiento
-├── id            # UUID
-├── product_id    # FK → products
-├── lot_number    # Número de lote
-├── expiration_date # Fecha de vencimiento
-├── quantity      # Cantidad
-└── location      # Ubicación (opcional)
-```
-
----
-
-## 🏗️ Arquitectura
-
-```
-┌─────────────────┐     ┌─────────────────┐
-│   Frontend      │────▶│   Supabase      │
-│   (React/Vite)  │     │   (PostgreSQL)  │
-└─────────────────┘     └─────────────────┘
-        │
-        ▼
-┌─────────────────┐
-│   Browser APIs  │
-│   • BarcodeDetector
-│   • MediaDevices
-│   • Tesseract.js
-└─────────────────┘
-```
-
-### Stack tecnológico
-
-| Capa | Tecnología |
+| Área | Tecnología |
 |------|------------|
 | Frontend | React 18 + Vite |
-| Routing | React Router v6 |
-| Backend | Supabase (PostgreSQL) |
-| OCR | Tesseract.js |
+| Styling | Vanilla CSS (Design System) |
+| Backend | Supabase (PostgreSQL + Auth) |
+| Deploy | Netlify |
 | Barcode | BarcodeDetector API |
-| Hosting | Netlify |
+| OCR | Tesseract.js |
 
----
-
-## 📁 Estructura del proyecto
+## 📁 Estructura
 
 ```
-scanfarma/
+scanFarma/
 ├── src/
 │   ├── components/     # Componentes reutilizables
-│   │   ├── BarcodeScanner.jsx
-│   │   └── DateOCR.jsx
-│   ├── pages/          # Páginas de la aplicación
-│   │   ├── LoadProduct.jsx
-│   │   ├── Alerts.jsx
-│   │   └── Inventory.jsx
-│   ├── lib/            # Utilidades y configuración
-│   │   └── supabase.js
-│   ├── App.jsx         # Router principal
-│   ├── main.jsx        # Entry point
-│   └── index.css       # Estilos globales
-├── supabase/
-│   └── migrations/     # Scripts SQL
+│   ├── pages/          # Pantallas de la app
+│   ├── lib/            # Servicios y utilidades
+│   └── index.css       # Design System
 ├── public/             # Assets estáticos
-├── .env.example        # Template de variables
-├── netlify.toml        # Configuración de deploy
-└── package.json
+└── supabase/           # Migraciones SQL (no incluidas)
 ```
 
----
+## 🚀 Demo
 
-## 🔧 Scripts disponibles
+**[Ver demo en vivo →](https://scanfarma.netlify.app)**
 
-| Comando | Descripción |
-|---------|-------------|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Build de producción |
-| `npm run preview` | Preview del build |
-| `npm run lint` | Linter (ESLint) |
+## 📸 Screenshots
 
----
+| Escaneo | Alertas | Inteligencia |
+|---------|---------|--------------|
+| Escanea productos con la cámara | Ve qué productos vencen pronto | Métricas y sugerencias automáticas |
 
-## 🌐 Deploy
+## 💼 Uso Comercial
 
-### Netlify (recomendado)
+ScanFarma está disponible como **servicio SaaS** para farmacias.
 
-1. Conectar repositorio en [app.netlify.com](https://app.netlify.com)
-2. Configurar variables de entorno en **Site settings > Environment variables**
-3. Deploy automático en cada push a `main`
+Para información sobre licencias comerciales o implementación:
 
-### Manual
+- 🌐 **Web:** [matiasbarreto.com](https://matiasbarreto.com)
+- 📧 **Email:** matiasbarreto@gmail.com
 
-```bash
-npm run build
-# Subir contenido de /dist a cualquier hosting estático
-```
+## 👤 Autor
 
----
+**Matías Barreto**
 
-## 🤝 Contribuir
-
-1. Fork del repositorio
-2. Crear branch (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit (`git commit -m 'feat: agregar nueva funcionalidad'`)
-4. Push (`git push origin feature/nueva-funcionalidad`)
-5. Abrir Pull Request
-
----
+- Website: [matiasbarreto.com](https://matiasbarreto.com)
+- GitHub: [@mattbarreto](https://github.com/mattbarreto)
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver [LICENSE](LICENSE) para más detalles.
+MIT License - ver [LICENSE](LICENSE) para más detalles.
 
 ---
 
-## 📞 Soporte
-
-¿Problemas o sugerencias? Abrí un [issue](https://github.com/mattbarreto/scanfarma/issues).
+<p align="center">
+  Hecho con ❤️ en Argentina 🇦🇷
+</p>
