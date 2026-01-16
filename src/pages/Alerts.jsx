@@ -12,6 +12,10 @@ export default function Alerts() {
     const [isLoading, setIsLoading] = useState(true)
     const [toast, setToast] = useState(null)
 
+    // Bulk selection state
+    const [selectedIds, setSelectedIds] = useState(new Set())
+    const [isProcessingBulk, setIsProcessingBulk] = useState(false)
+
     const showToast = (message, type = 'success') => {
         setToast({ message, type })
         setTimeout(() => setToast(null), 3000)
@@ -20,7 +24,6 @@ export default function Alerts() {
     const fetchBatches = async () => {
         setIsLoading(true)
         try {
-            // Usamos la vista batches_with_status que calcula el estado
             let query = supabase
                 .from('batches_with_status')
                 .select(`
@@ -34,13 +37,11 @@ export default function Alerts() {
         `)
                 .order('expiration_date', { ascending: true })
 
-            // Apply filter
             if (filter === 'EXPIRED') {
                 query = query.eq('status', 'EXPIRED')
             } else if (filter === 'EXPIRING') {
                 query = query.eq('status', 'EXPIRING')
             } else {
-                // Show both expired and expiring by default
                 query = query.in('status', ['EXPIRED', 'EXPIRING'])
             }
 
@@ -53,6 +54,7 @@ export default function Alerts() {
             }
 
             setBatches(data || [])
+            setSelectedIds(new Set()) // Clear selection when filter changes
         } catch (err) {
             console.error('Error:', err)
             showToast('Error de conexión', 'error')
@@ -71,7 +73,69 @@ export default function Alerts() {
     const expiredCount = batches.filter(b => b.status === 'EXPIRED').length
     const expiringCount = batches.filter(b => b.status === 'EXPIRING').length
 
-    // ... (fetchBatches logic keeps same)
+    // Selection handlers
+    const toggleSelection = (batchId) => {
+        const newSelected = new Set(selectedIds)
+        if (newSelected.has(batchId)) {
+            newSelected.delete(batchId)
+        } else {
+            newSelected.add(batchId)
+        }
+        setSelectedIds(newSelected)
+    }
+
+    const selectAll = () => {
+        if (selectedIds.size === batches.length) {
+            setSelectedIds(new Set())
+        } else {
+            setSelectedIds(new Set(batches.map(b => b.id)))
+        }
+    }
+
+    const isAllSelected = batches.length > 0 && selectedIds.size === batches.length
+
+    // Bulk actions
+    const handleBulkWaste = () => {
+        const count = selectedIds.size
+        setModalConfig({
+            isOpen: true,
+            type: 'warning',
+            title: `Registrar ${count} lotes como pérdida`,
+            message: `Los ${count} lotes seleccionados saldrán del inventario activo pero quedarán en el historial para métricas.`,
+            confirmText: `Registrar ${count} lotes`,
+            onConfirm: processBulkWaste
+        })
+    }
+
+    const processBulkWaste = async () => {
+        setIsProcessingBulk(true)
+        let successCount = 0
+        let errorCount = 0
+
+        for (const batchId of selectedIds) {
+            try {
+                const result = await markBatchAsExpired(batchId)
+                if (result.success) {
+                    successCount++
+                } else {
+                    errorCount++
+                }
+            } catch (err) {
+                errorCount++
+            }
+        }
+
+        setIsProcessingBulk(false)
+
+        if (errorCount === 0) {
+            showToast(`${successCount} lotes registrados como pérdida`)
+        } else {
+            showToast(`${successCount} procesados, ${errorCount} errores`, 'error')
+        }
+
+        setSelectedIds(new Set())
+        fetchBatches()
+    }
 
     const handleDeleteClick = (batchId) => {
         setModalConfig({
@@ -194,7 +258,7 @@ export default function Alerts() {
                 <h1><Icon name="bell" size={32} style={{ marginRight: 'var(--space-sm)' }} /> Alertas</h1>
             </div>
 
-            {/* Filter tabs logic ... */}
+            {/* Filter tabs */}
             <div className="alert-tabs">
                 <button
                     className={`alert-tab ${filter === 'ALL' ? 'active' : ''}`}
@@ -216,6 +280,38 @@ export default function Alerts() {
                 </button>
             </div>
 
+            {/* Bulk Action Bar */}
+            {batches.length > 0 && !isLoading && (
+                <div className="bulk-action-bar">
+                    <label className="bulk-select-all">
+                        <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            onChange={selectAll}
+                            className="bulk-checkbox"
+                        />
+                        <span>Seleccionar todos</span>
+                    </label>
+
+                    {selectedIds.size > 0 && (
+                        <button
+                            className="bulk-action-btn-main"
+                            onClick={handleBulkWaste}
+                            disabled={isProcessingBulk}
+                        >
+                            {isProcessingBulk ? (
+                                <span>Procesando...</span>
+                            ) : (
+                                <>
+                                    <Icon name="clipboard" size={16} />
+                                    <span>Registrar pérdida ({selectedIds.size})</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Content */}
             {isLoading ? (
                 <LoadingSkeleton />
@@ -228,11 +324,22 @@ export default function Alerts() {
             ) : (
                 <div className="animate-slide-up">
                     {batches.map(batch => (
-                        <div key={batch.id} className={`alert-item ${getStatusClass(batch.status)}`}>
+                        <div
+                            key={batch.id}
+                            className={`alert-item ${getStatusClass(batch.status)} ${selectedIds.has(batch.id) ? 'selected' : ''}`}
+                        >
                             <div className="alert-item-header">
-                                <span className="alert-item-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    {getStatusIcon(batch.status)} {batch.products?.name || 'Producto'}
-                                </span>
+                                <label className="alert-item-select">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIds.has(batch.id)}
+                                        onChange={() => toggleSelection(batch.id)}
+                                        className="bulk-checkbox"
+                                    />
+                                    <span className="alert-item-title">
+                                        {getStatusIcon(batch.status)} {batch.products?.name || 'Producto'}
+                                    </span>
+                                </label>
                                 <span className={`status-badge ${getStatusClass(batch.status)}`}>
                                     {getStatusLabel(batch.status)}
                                 </span>

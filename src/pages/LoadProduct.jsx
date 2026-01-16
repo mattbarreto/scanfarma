@@ -4,6 +4,8 @@ import Icon from '../components/Icon'
 import DateOCR from '../components/DateOCR'
 import Skeleton from '../components/Skeleton'
 import { supabase } from '../lib/supabase'
+import AutocompleteInput from '../components/AutocompleteInput'
+import { memoryService } from '../lib/memoryService'
 
 export default function LoadProduct() {
     // Scanning states
@@ -27,6 +29,11 @@ export default function LoadProduct() {
     const [isNewProduct, setIsNewProduct] = useState(false)
     const [newProductName, setNewProductName] = useState('')
     const [newProductBrand, setNewProductBrand] = useState('')
+    const [user, setUser] = useState(null)
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    }, [])
 
     const showToast = (message, type = 'success') => {
         setToast({ message, type })
@@ -39,7 +46,17 @@ export default function LoadProduct() {
         setIsLoading(true)
 
         try {
-            // Search for product in database
+            // 1. First, check user's memory for this barcode
+            let memoryData = null
+            if (user) {
+                try {
+                    memoryData = await memoryService.getByBarcode(user.id, scannedBarcode)
+                } catch (e) {
+                    // Memory lookup failed, continue without it
+                }
+            }
+
+            // 2. Search for product in database
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
@@ -55,12 +72,28 @@ export default function LoadProduct() {
             if (data) {
                 setProduct(data)
                 setIsNewProduct(false)
-                showToast(`Producto encontrado: ${data.name}`)
+
+                // Pre-fill from memory if available
+                if (memoryData) {
+                    if (memoryData.location) setLocation(memoryData.location)
+                    showToast(`Producto encontrado: ${data.name} (memoria activa)`)
+                } else {
+                    showToast(`Producto encontrado: ${data.name}`)
+                }
             } else {
                 // Product not found, allow user to create it
                 setProduct(null)
                 setIsNewProduct(true)
-                showToast('Producto nuevo - completa los datos', 'warning')
+
+                // Pre-fill from memory if available (for new products)
+                if (memoryData) {
+                    setNewProductName(memoryData.product_name || '')
+                    setNewProductBrand(memoryData.laboratory || '')
+                    setLocation(memoryData.location || '')
+                    showToast('Producto nuevo - datos sugeridos de memoria', 'warning')
+                } else {
+                    showToast('Producto nuevo - completa los datos', 'warning')
+                }
             }
         } catch (err) {
             console.error('Error:', err)
@@ -147,6 +180,17 @@ export default function LoadProduct() {
 
             showToast('¡Lote guardado correctamente!')
 
+            // Update memory with product data (fire and forget or await)
+            if (user) {
+                const memoryData = {
+                    barcode,
+                    product_name: product ? product.name : newProductName,
+                    laboratory: product ? product.brand : newProductBrand,
+                    location: location
+                }
+                memoryService.updateMemory(user.id, memoryData).catch(console.error)
+            }
+
             // Reset form for next scan
             resetForm()
 
@@ -225,12 +269,17 @@ export default function LoadProduct() {
                     </p>
                     <div className="form-group">
                         <label className="form-label">Nombre del Producto *</label>
-                        <input
-                            type="text"
+                        <AutocompleteInput
                             className="form-input"
                             placeholder="Ej: Ibuprofeno 400mg"
                             value={newProductName}
-                            onChange={(e) => setNewProductName(e.target.value)}
+                            onChange={setNewProductName}
+                            userId={user?.id}
+                            onSelect={(item) => {
+                                setNewProductName(item.product_name)
+                                if (item.laboratory) setNewProductBrand(item.laboratory)
+                                if (item.location) setLocation(item.location)
+                            }}
                         />
                     </div>
                     <div className="form-group">

@@ -1,9 +1,31 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
 
 export default function About() {
-    const appVersion = '2.0.0'
+    const appVersion = '2.2.0'
     const buildDate = '2026-01-16'
+    const [copied, setCopied] = useState(false)
+
+    const handleShare = async () => {
+        const shareData = {
+            title: 'ScanFarma - Inteligencia para Farmacias',
+            text: 'ScanFarma es una app que aprende cómo trabaja tu farmacia y te ayuda a evitar vencimientos y pérdidas. Probala acá:',
+            url: 'https://scanfarma.netlify.app'
+        }
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData)
+            } catch (err) {
+                // Usuario canceló
+            }
+        } else {
+            navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        }
+    }
 
     return (
         <div className="app-container">
@@ -30,7 +52,7 @@ export default function About() {
                 </h3>
                 <p className="about-text">
                     Sistema de inteligencia de rotación para farmacias. Controla vencimientos,
-                    integra ventas automáticamente y genera insights para reducir pérdidas.
+                    aprende de tu operación y genera insights para reducir pérdidas.
                 </p>
             </div>
 
@@ -40,13 +62,48 @@ export default function About() {
                     <Icon name="star" size={20} style={{ marginRight: 8 }} /> Características
                 </h3>
                 <ul className="about-list">
+                    <li><Icon name="brain" size={16} /> Memoria Predictiva (Nuevo)</li>
                     <li><Icon name="scan" size={16} /> Escaneo de código de barras</li>
                     <li><Icon name="calendar" size={16} /> OCR de fechas de vencimiento</li>
                     <li><Icon name="download" size={16} /> Integración de ventas (FIFO)</li>
-                    <li><Icon name="brain" size={16} /> Inteligencia de rotación</li>
                     <li><Icon name="chart" size={16} /> Métricas y sugerencias</li>
                     <li><Icon name="bell" size={16} /> Alertas inteligentes</li>
                 </ul>
+            </div>
+
+            {/* Share Card - High Priority */}
+            <div className="card share-card" style={{
+                background: 'var(--gradient-primary)',
+                color: 'white',
+                border: 'none',
+                boxShadow: 'var(--shadow-lg)'
+            }}>
+                <h3 className="about-section-title" style={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
+                    <Icon name="heart" size={20} style={{ marginRight: 8 }} /> ¿Te es útil ScanFarma?
+                </h3>
+                <p className="about-text" style={{ marginBottom: 'var(--space-md)', color: 'rgba(255,255,255,0.9)' }}>
+                    Ayudá a otros colegas a modernizar su gestión.
+                    Recomendá la app con un toque.
+                </p>
+                <button
+                    className="btn"
+                    onClick={handleShare}
+                    style={{
+                        width: '100%',
+                        justifyContent: 'center',
+                        fontWeight: 600,
+                        backgroundColor: 'white',
+                        color: 'var(--color-primary)',
+                        border: 'none',
+                        padding: '12px'
+                    }}
+                >
+                    {copied ? (
+                        <><Icon name="check" size={20} /> Enlace copiado</>
+                    ) : (
+                        <><Icon name="share" size={20} /> Recomendar a un colega</>
+                    )}
+                </button>
             </div>
 
             {/* Commercial Info */}

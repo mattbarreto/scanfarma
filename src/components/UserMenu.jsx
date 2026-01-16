@@ -1,17 +1,50 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
+import { getNotificationRule, updateNotificationThreshold, toggleNotifications } from '../lib/notificationService'
+import { getUserProfile } from '../lib/authService'
 
-export default function UserMenu({ userName, onLogout }) {
+export default function UserMenu({ userName, userId, onLogout }) {
     const [isOpen, setIsOpen] = useState(false)
+    const [showConfig, setShowConfig] = useState(false)
+    const [threshold, setThreshold] = useState(30)
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
+    const [saveStatus, setSaveStatus] = useState(null) // 'success' | 'error' | null
     const menuRef = useRef(null)
     const navigate = useNavigate()
+
+    // Load user settings when menu opens
+    useEffect(() => {
+        if (isOpen && userId) {
+            loadSettings()
+        }
+    }, [isOpen, userId])
+
+    const loadSettings = async () => {
+        try {
+            // Get EXPIRING_SOON threshold
+            const { data: rule } = await getNotificationRule(userId, 'EXPIRING_SOON')
+            if (rule) {
+                setThreshold(rule.threshold)
+            }
+
+            // Get notifications enabled status
+            const { data: profile } = await getUserProfile(userId)
+            if (profile) {
+                setNotificationsEnabled(profile.notifications_enabled !== false)
+            }
+        } catch (err) {
+            console.error('Error loading settings:', err)
+        }
+    }
 
     // Close on click outside
     useEffect(() => {
         function handleClickOutside(event) {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setIsOpen(false)
+                setShowConfig(false)
             }
         }
 
@@ -30,7 +63,11 @@ export default function UserMenu({ userName, onLogout }) {
     useEffect(() => {
         function handleEscape(event) {
             if (event.key === 'Escape') {
-                setIsOpen(false)
+                if (showConfig) {
+                    setShowConfig(false)
+                } else {
+                    setIsOpen(false)
+                }
             }
         }
 
@@ -41,7 +78,7 @@ export default function UserMenu({ userName, onLogout }) {
         return () => {
             document.removeEventListener('keydown', handleEscape)
         }
-    }, [isOpen])
+    }, [isOpen, showConfig])
 
     const handleLogout = () => {
         setIsOpen(false)
@@ -53,16 +90,35 @@ export default function UserMenu({ userName, onLogout }) {
         navigate('/acerca')
     }
 
+    const handleSaveSettings = async () => {
+        setIsSaving(true)
+        setSaveStatus(null)
+
+        try {
+            // Update threshold
+            await updateNotificationThreshold(userId, 'EXPIRING_SOON', threshold)
+
+            // Update notifications enabled
+            await toggleNotifications(userId, notificationsEnabled)
+
+            setSaveStatus('success')
+            setTimeout(() => setSaveStatus(null), 2000)
+        } catch (err) {
+            console.error('Error saving settings:', err)
+            setSaveStatus('error')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     const getInitials = (name) => {
         if (!name) return <Icon name="user" size={20} />
 
-        // Defensive splitting and filtering
         const words = name.trim().split(/\s+/).filter(Boolean)
 
         if (words.length === 0) return '??'
 
         if (words.length >= 2) {
-            // Safe access using optional chaining just in case, though filter(Boolean) protects us
             return (words[0][0] + words[1][0]).toUpperCase()
         }
 
@@ -86,7 +142,7 @@ export default function UserMenu({ userName, onLogout }) {
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="user-menu-dropdown">
+                <div className="user-menu-dropdown" style={{ minWidth: showConfig ? '280px' : '220px' }}>
                     {/* User Info Header */}
                     <div className="user-menu-header">
                         <div className="user-menu-avatar">
@@ -101,28 +157,111 @@ export default function UserMenu({ userName, onLogout }) {
                         </div>
                     </div>
 
-                    {/* Menu Items */}
-                    <div className="user-menu-items">
-                        <button
-                            className="user-menu-item"
-                            onClick={handleAboutClick}
-                        >
-                            <span className="user-menu-item-icon"><Icon name="info" size={18} /></span>
-                            <span>Info / Acerca de</span>
-                        </button>
-                    </div>
+                    {/* Config Panel */}
+                    {showConfig ? (
+                        <div className="user-menu-config">
+                            <div className="config-header">
+                                <button
+                                    className="config-back"
+                                    onClick={() => setShowConfig(false)}
+                                    aria-label="Volver"
+                                >
+                                    <Icon name="arrowLeft" size={16} />
+                                </button>
+                                <span>Configuración</span>
+                            </div>
 
-                    {/* Separator */}
-                    <div className="user-menu-separator"></div>
+                            {/* Threshold Setting */}
+                            <div className="config-item">
+                                <label className="config-label">
+                                    <Icon name="bell" size={16} />
+                                    Alertar antes de vencer
+                                </label>
+                                <div className="config-slider-row">
+                                    <input
+                                        type="range"
+                                        min="7"
+                                        max="90"
+                                        step="1"
+                                        value={threshold}
+                                        onChange={(e) => setThreshold(parseInt(e.target.value))}
+                                        className="config-slider"
+                                    />
+                                    <span className="config-value">{threshold} días</span>
+                                </div>
+                            </div>
 
-                    {/* Logout */}
-                    <button
-                        className="user-menu-item user-menu-logout"
-                        onClick={handleLogout}
-                    >
-                        <span className="user-menu-item-icon"><Icon name="logout" size={18} /></span>
-                        <span>Cerrar sesión</span>
-                    </button>
+                            {/* Notifications Toggle */}
+                            <div className="config-item">
+                                <label className="config-label">
+                                    <Icon name="mail" size={16} />
+                                    Notificaciones email
+                                </label>
+                                <button
+                                    className={`config-toggle ${notificationsEnabled ? 'active' : ''}`}
+                                    onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                                    aria-pressed={notificationsEnabled}
+                                >
+                                    <span className="toggle-track">
+                                        <span className="toggle-thumb"></span>
+                                    </span>
+                                    <span className="toggle-label">
+                                        {notificationsEnabled ? 'Activadas' : 'Desactivadas'}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {/* Save Button */}
+                            <button
+                                className={`config-save ${saveStatus === 'success' ? 'success' : ''}`}
+                                onClick={handleSaveSettings}
+                                disabled={isSaving}
+                            >
+                                {isSaving ? (
+                                    <span>Guardando...</span>
+                                ) : saveStatus === 'success' ? (
+                                    <>
+                                        <Icon name="check" size={16} />
+                                        <span>Guardado</span>
+                                    </>
+                                ) : (
+                                    <span>Guardar cambios</span>
+                                )}
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Menu Items */}
+                            <div className="user-menu-items">
+                                <button
+                                    className="user-menu-item"
+                                    onClick={() => setShowConfig(true)}
+                                >
+                                    <span className="user-menu-item-icon"><Icon name="settings" size={18} /></span>
+                                    <span>Configuración</span>
+                                </button>
+                                <button
+                                    className="user-menu-item"
+                                    onClick={handleAboutClick}
+                                >
+                                    <span className="user-menu-item-icon"><Icon name="info" size={18} /></span>
+                                    <span>Info / Acerca de</span>
+                                </button>
+                            </div>
+
+                            {/* Separator */}
+                            <div className="user-menu-separator"></div>
+
+                            {/* Logout */}
+                            <button
+                                className="user-menu-item user-menu-logout"
+                                onClick={handleLogout}
+                            >
+                                <span className="user-menu-item-icon"><Icon name="logout" size={18} /></span>
+                                <span>Cerrar sesión</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             )}
         </div>

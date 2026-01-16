@@ -142,6 +142,7 @@ function App() {
       {/* User Menu - Top Right */}
       <UserMenu
         userName={profile?.pharmacy_name || session.user.email}
+        userId={session.user.id}
         onLogout={handleLogout}
       />
 

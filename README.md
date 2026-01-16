@@ -16,35 +16,36 @@ Las farmacias pierden dinero por productos vencidos. ScanFarma:
 
 ## ✨ Características
 
-- 📱 **PWA** - Funciona como app nativa en móviles
+- 🧠 **Memoria Predictiva (v2.2)** - Aprende el vocabulario de tu farmacia
+- ⚡ **Autocompletado Inteligente** - Carga de productos en < 5 segundos
+- 📱 **PWA Installable** - Funciona offline y como app nativa
 - 📷 **Escaneo de código de barras** - BarcodeDetector API
-- 📅 **OCR de fechas** - Tesseract.js
-- 📊 **Dashboard de inteligencia** - Métricas y sugerencias
-- 🔔 **Notificaciones** - Alertas por email (próximamente)
-- 🌙 **Dark mode** - UI premium
+- 📅 **OCR de fechas** - Tesseract.js optimizado
+- 📊 **Dashboard de inteligencia** - Gráficos y score de salud
+- 🔔 **Notificaciones** - Alertas diarias via Email (Resend + Cron)
+- 🌙 **Dark mode & Glassmorphism** - UI premium
 
 ## 🛠️ Tech Stack
 
 | Área | Tecnología |
 |------|------------|
 | Frontend | React 18 + Vite |
-| Styling | Vanilla CSS (Design System) |
-| Backend | Supabase (PostgreSQL + Auth) |
+| Styling | Vanilla CSS (Premium Glassmorphism) |
+| Backend | Supabase (DB + Auth + Edge Functions) |
 | Deploy | Netlify |
-| Barcode | BarcodeDetector API |
-| OCR | Tesseract.js |
+| Intelligence | Custom Scoring Engine v1.0 |
 
 ## 📁 Estructura
 
 ```
 scanFarma/
 ├── src/
-│   ├── components/     # Componentes reutilizables
-│   ├── pages/          # Pantallas de la app
-│   ├── lib/            # Servicios y utilidades
+│   ├── components/     # Autocomplete, Scanner, Charts
+│   ├── pages/          # LoadProduct (Smart), Analytics
+│   ├── lib/            # memoryService, notificationService
 │   └── index.css       # Design System
-├── public/             # Assets estáticos
-└── supabase/           # Migraciones SQL (no incluidas)
+├── public/             # Assets & Manifest
+└── supabase/           # Migraciones & Functions
 ```
 
 ## 🚀 Demo
