@@ -32,10 +32,8 @@ export default function Inventory() {
         `)
                 .order('expiration_date', { ascending: true })
 
-            // Apply status filter
-            if (filter !== 'ALL') {
-                query = query.eq('status', filter)
-            }
+            // Removed server-side filter to calculate global counts correctly
+            // if (filter !== 'ALL') { ... }
 
             const { data, error } = await query
 
@@ -56,10 +54,18 @@ export default function Inventory() {
 
     useEffect(() => {
         fetchBatches()
-    }, [filter])
+    }, []) // Fetch once on mount
 
-    // Filter by search term
+    // Counts for tabs
+    const expiredCount = batches.filter(b => b.status === 'EXPIRED').length
+    const expiringCount = batches.filter(b => b.status === 'EXPIRING').length
+
+    // Filter by search term AND status
     const filteredBatches = batches.filter(batch => {
+        // Status Filter
+        if (filter !== 'ALL' && batch.status !== filter) return false
+
+        // Search Filter
         if (!searchTerm) return true
         const term = searchTerm.toLowerCase()
         return (
@@ -88,13 +94,13 @@ export default function Inventory() {
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'EXPIRED': return <Icon name="alertTriangle" size={16} style={{ color: 'var(--status-expired)' }} />
-            case 'EXPIRING': return <Icon name="alertTriangle" size={16} style={{ color: 'var(--status-expiring)' }} />
-            default: return <Icon name="check" size={16} style={{ color: 'var(--status-valid)' }} />
+            case 'EXPIRED': return <Icon name="alertTriangle" size={16} style={{ color: 'var(--color-danger)' }} />
+            case 'EXPIRING': return <Icon name="alertTriangle" size={16} style={{ color: 'var(--color-warning)' }} />
+            default: return <Icon name="check" size={16} style={{ color: 'var(--color-success)' }} />
         }
     }
 
-    // Group by product
+    // Grouping logic remains the same acting on filteredBatches
     const groupedByProduct = filteredBatches.reduce((acc, batch) => {
         const productId = batch.product_id
         if (!acc[productId]) {
@@ -141,19 +147,19 @@ export default function Inventory() {
                     className={`alert-tab ${filter === 'VALID' ? 'active' : ''}`}
                     onClick={() => setFilter('VALID')}
                 >
-                    <Icon name="check" size={14} style={{ marginRight: 4 }} /> Válidos
+                    <Icon name="check" size={14} /> Válidos
                 </button>
                 <button
-                    className={`alert-tab ${filter === 'EXPIRING' ? 'active' : ''}`}
+                    className={`alert-tab ${expiringCount > 0 ? 'tab-warning' : ''} ${filter === 'EXPIRING' ? 'active' : ''}`}
                     onClick={() => setFilter('EXPIRING')}
                 >
-                    <Icon name="alertTriangle" size={14} style={{ marginRight: 4 }} /> Por vencer
+                    <Icon name="alertTriangle" size={14} /> Por vencer ({expiringCount})
                 </button>
                 <button
-                    className={`alert-tab ${filter === 'EXPIRED' ? 'active' : ''}`}
+                    className={`alert-tab ${expiredCount > 0 ? 'tab-danger' : ''} ${filter === 'EXPIRED' ? 'active' : ''}`}
                     onClick={() => setFilter('EXPIRED')}
                 >
-                    <Icon name="alertTriangle" size={14} style={{ marginRight: 4 }} /> Vencidos
+                    <Icon name="alertTriangle" size={14} /> Vencidos ({expiredCount})
                 </button>
             </div>
 
