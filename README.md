@@ -75,7 +75,7 @@ Para información sobre licencias comerciales o implementación:
 
 ## 📄 Licencia
 
-MIT License - ver [LICENSE](LICENSE) para más detalles.
+Este software es **Source Available**. El código es visible con fines educativos y de portfolio, pero el uso comercial requiere licencia. Ver [LICENSE](LICENSE) para más detalles.
 
 ---
 
