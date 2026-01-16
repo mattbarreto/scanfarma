@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import Icon from './Icon'
 
 export default function UserMenu({ userName, onLogout }) {
     const [isOpen, setIsOpen] = useState(false)
@@ -52,13 +53,19 @@ export default function UserMenu({ userName, onLogout }) {
         navigate('/acerca')
     }
 
-    // Get initials for avatar
     const getInitials = (name) => {
-        if (!name) return '👤'
-        const words = name.split(' ')
+        if (!name) return <Icon name="user" size={20} />
+
+        // Defensive splitting and filtering
+        const words = name.trim().split(/\s+/).filter(Boolean)
+
+        if (words.length === 0) return '??'
+
         if (words.length >= 2) {
+            // Safe access using optional chaining just in case, though filter(Boolean) protects us
             return (words[0][0] + words[1][0]).toUpperCase()
         }
+
         return name.substring(0, 2).toUpperCase()
     }
 
@@ -74,7 +81,7 @@ export default function UserMenu({ userName, onLogout }) {
                 aria-label="Menú de usuario"
                 aria-expanded={isOpen}
             >
-                {isEmail ? '👤' : initials}
+                {isEmail ? <Icon name="user" size={24} /> : initials}
             </button>
 
             {/* Dropdown Menu */}
@@ -83,7 +90,7 @@ export default function UserMenu({ userName, onLogout }) {
                     {/* User Info Header */}
                     <div className="user-menu-header">
                         <div className="user-menu-avatar">
-                            {isEmail ? '👤' : initials}
+                            {isEmail ? <Icon name="user" size={24} style={{ color: 'var(--text-primary)' }} /> : initials}
                         </div>
                         <div className="user-menu-info">
                             <span className="user-menu-name">{userName}</span>
@@ -100,7 +107,7 @@ export default function UserMenu({ userName, onLogout }) {
                             className="user-menu-item"
                             onClick={handleAboutClick}
                         >
-                            <span className="user-menu-item-icon">ℹ️</span>
+                            <span className="user-menu-item-icon"><Icon name="info" size={18} /></span>
                             <span>Info / Acerca de</span>
                         </button>
                     </div>
@@ -113,7 +120,7 @@ export default function UserMenu({ userName, onLogout }) {
                         className="user-menu-item user-menu-logout"
                         onClick={handleLogout}
                     >
-                        <span className="user-menu-item-icon">🚪</span>
+                        <span className="user-menu-item-icon"><Icon name="logout" size={18} /></span>
                         <span>Cerrar sesión</span>
                     </button>
                 </div>

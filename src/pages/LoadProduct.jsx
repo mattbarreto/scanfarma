@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import BarcodeScanner from '../components/BarcodeScanner'
+import Icon from '../components/Icon'
 import DateOCR from '../components/DateOCR'
+import Skeleton from '../components/Skeleton'
 import { supabase } from '../lib/supabase'
 
 export default function LoadProduct() {
@@ -177,7 +179,7 @@ export default function LoadProduct() {
     return (
         <div className="app-container">
             <div className="page-header">
-                <h1>📦 Cargar Producto</h1>
+                <h1><Icon name="package" size={32} style={{ marginRight: 'var(--space-sm)' }} /> Cargar Producto</h1>
             </div>
 
             {/* Barcode Scanner Section */}
@@ -190,25 +192,26 @@ export default function LoadProduct() {
                 <button
                     className={`scanner-btn ${barcode ? 'active' : ''}`}
                     onClick={() => setShowBarcodeScanner(true)}
+                    aria-label="Escanear código de barras"
                 >
-                    <span className="icon">📷</span>
+                    <Icon name="scan" size={48} className="icon" />
                     <span className="label">
                         {barcode ? `Código: ${barcode}` : 'Escanear Código de Barras'}
                     </span>
                 </button>
             )}
 
-            {/* Loading indicator */}
+            {/* Loading indicator with Skeleton */}
             {isLoading && (
-                <div className="card" style={{ textAlign: 'center' }}>
-                    <div className="spinner" style={{ margin: '0 auto' }}></div>
-                    <p className="loading-text mt-md">Buscando producto...</p>
+                <div className="card" style={{ padding: 'var(--space-lg)' }}>
+                    <Skeleton width="60%" height="24px" style={{ marginBottom: 'var(--space-sm)' }} />
+                    <Skeleton width="40%" height="16px" />
                 </div>
             )}
 
             {/* Product Info Card */}
             {product && !isLoading && (
-                <div className="card product-card">
+                <div className="card product-card animate-slide-up">
                     <span className="product-name">{product.name}</span>
                     {product.brand && <span className="product-brand">{product.brand}</span>}
                 </div>
@@ -216,9 +219,9 @@ export default function LoadProduct() {
 
             {/* New Product Form */}
             {isNewProduct && !isLoading && (
-                <div className="card">
-                    <p style={{ marginBottom: 'var(--space-md)', color: 'var(--color-warning)' }}>
-                        ⚠️ Producto no encontrado. Ingresa los datos:
+                <div className="card animate-slide-up">
+                    <p style={{ marginBottom: 'var(--space-md)', color: 'var(--color-warning)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icon name="alertTriangle" size={20} /> Producto no encontrado. Ingresa los datos:
                     </p>
                     <div className="form-group">
                         <label className="form-label">Nombre del Producto *</label>
@@ -245,7 +248,7 @@ export default function LoadProduct() {
 
             {/* Date Scanner Section */}
             {(product || isNewProduct) && !isLoading && (
-                <>
+                <div className="animate-slide-up">
                     {showDateScanner ? (
                         <DateOCR
                             onDateDetected={handleDateDetected}
@@ -255,8 +258,9 @@ export default function LoadProduct() {
                         <button
                             className={`scanner-btn ${expirationDate ? 'active' : ''}`}
                             onClick={() => setShowDateScanner(true)}
+                            aria-label="Escanear fecha de vencimiento"
                         >
-                            <span className="icon">📅</span>
+                            <Icon name="calendar" size={48} className="icon" />
                             <span className="label">
                                 {expirationDate ? `Vencimiento: ${expirationDate}` : 'Escanear Fecha de Vencimiento'}
                             </span>
@@ -322,10 +326,10 @@ export default function LoadProduct() {
                                 Guardando...
                             </>
                         ) : (
-                            <>✅ Guardar</>
+                            <><Icon name="check" size={20} /> Guardar</>
                         )}
                     </button>
-                </>
+                </div>
             )}
 
             {/* Toast notification */}

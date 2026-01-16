@@ -214,7 +214,7 @@ export default function Login() {
                     fontSize: 'var(--font-size-xs)',
                     color: 'var(--text-muted)'
                 }}>
-                    © 2026 ScanFarma
+                    © 2026 ScanFarma • Developed by Matías Barreto
                 </p>
             </div>
         </div>

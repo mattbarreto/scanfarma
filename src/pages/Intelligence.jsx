@@ -6,6 +6,9 @@ import {
     getTopRiskProducts,
     getAllSuggestions
 } from '../lib/metricsService'
+import Icon from '../components/Icon'
+import Skeleton from '../components/Skeleton'
+import EmptyState from '../components/EmptyState'
 
 export default function Intelligence() {
     const [stats, setStats] = useState(null)
@@ -56,31 +59,46 @@ export default function Intelligence() {
     }
 
     const getRiskEmoji = (score) => {
-        if (score >= 60) return '🔴'
-        if (score >= 30) return '🟠'
-        return '🟢'
+        if (score >= 60) return <Icon name="alertTriangle" size={16} style={{ color: 'var(--color-danger)' }} />
+        if (score >= 30) return <Icon name="alertTriangle" size={16} style={{ color: 'var(--color-warning)' }} />
+        return <Icon name="check" size={16} style={{ color: 'var(--color-success)' }} />
     }
 
     if (isLoading) {
         return (
             <div className="app-container">
                 <div className="page-header">
-                    <h1>🧠 Inteligencia</h1>
+                    <h1><Icon name="brain" size={32} style={{ marginRight: 'var(--space-sm)' }} /> Inteligencia</h1>
                 </div>
-                <div className="card" style={{ textAlign: 'center', padding: 'var(--space-2xl)' }}>
-                    <div className="spinner" style={{ margin: '0 auto' }}></div>
-                    <p style={{ marginTop: 'var(--space-md)', color: 'var(--text-secondary)' }}>
-                        Calculando métricas...
-                    </p>
+
+                {/* Skeleton Stats */}
+                <div className="stats-grid">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="stat-card">
+                            <Skeleton width="40%" height="32px" style={{ margin: '0 auto var(--space-xs)' }} />
+                            <Skeleton width="60%" height="16px" style={{ margin: '0 auto' }} />
+                        </div>
+                    ))}
                 </div>
+
+                {/* Skeleton Cards */}
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="card" style={{ marginBottom: 'var(--space-md)' }}>
+                        <Skeleton width="30%" height="24px" style={{ marginBottom: 'var(--space-md)' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                            <Skeleton width="100%" height="40px" />
+                            <Skeleton width="100%" height="40px" />
+                        </div>
+                    </div>
+                ))}
             </div>
         )
     }
 
     return (
-        <div className="app-container">
+        <div className="app-container animate-slide-up">
             <div className="page-header">
-                <h1>🧠 Inteligencia</h1>
+                <h1><Icon name="brain" size={32} style={{ marginRight: 'var(--space-sm)' }} /> Inteligencia</h1>
             </div>
 
             {/* Error message */}
@@ -89,7 +107,9 @@ export default function Intelligence() {
                     background: 'rgba(239, 68, 68, 0.1)',
                     borderLeft: '4px solid var(--color-danger)'
                 }}>
-                    <p style={{ margin: 0 }}>⚠️ {error}</p>
+                    <p style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icon name="alertTriangle" size={20} /> {error}
+                    </p>
                     <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginTop: 'var(--space-sm)' }}>
                         Ejecutá las migraciones SQL en Supabase para habilitar las vistas analíticas.
                     </p>
@@ -121,12 +141,10 @@ export default function Intelligence() {
             {/* Top Waste Products */}
             <div className="card">
                 <h3 style={{ marginBottom: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-                    🔴 Mayor Pérdida
+                    <Icon name="alertTriangle" size={20} style={{ color: 'var(--color-danger)' }} /> Mayor Pérdida
                 </h3>
                 {topWaste.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>
-                        No hay datos de pérdidas aún
-                    </p>
+                    <EmptyState type="chart" title="Sin pérdidas" description="No hay datos de residuos registrados." />
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
                         {topWaste.map((product, index) => (
@@ -160,12 +178,10 @@ export default function Intelligence() {
             {/* Top Risk Products */}
             <div className="card">
                 <h3 style={{ marginBottom: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-                    🟠 Riesgo Próximo
+                    <Icon name="alertTriangle" size={20} style={{ color: 'var(--color-warning)' }} /> Riesgo Próximo
                 </h3>
                 {topRisk.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>
-                        No hay productos en riesgo
-                    </p>
+                    <EmptyState type="success" title="Sin riesgos" description="No hay productos próximos a vencer." />
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
                         {topRisk.map((product, index) => (
@@ -201,12 +217,12 @@ export default function Intelligence() {
             {/* Suggestions */}
             <div className="card">
                 <h3 style={{ marginBottom: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-                    💡 Sugerencias
+                    <Icon name="lightbulb" size={20} style={{ color: 'var(--color-primary)' }} /> Sugerencias
                 </h3>
                 {suggestions.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)', fontStyle: 'italic' }}>
                         Todo en orden. No hay sugerencias por el momento.
-                    </p>
+                    </div>
                 ) : (
                     <div>
                         {suggestions.map((suggestion, index) => (
@@ -226,13 +242,15 @@ export default function Intelligence() {
 
             {/* Quick Actions */}
             <div className="card" style={{ background: 'var(--bg-elevated)' }}>
-                <h3 style={{ marginBottom: 'var(--space-md)' }}>⚡ Acciones Rápidas</h3>
+                <h3 style={{ marginBottom: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                    <Icon name="zap" size={20} /> Acciones Rápidas
+                </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-                    <Link to="/alertas" className="btn btn-secondary">
-                        🔔 Ver todas las alertas
+                    <Link to="/alertas" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                        <Icon name="bell" size={18} /> Ver todas las alertas
                     </Link>
-                    <Link to="/ventas" className="btn btn-secondary">
-                        📥 Importar ventas
+                    <Link to="/ventas" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                        <Icon name="download" size={18} /> Importar ventas
                     </Link>
                 </div>
             </div>

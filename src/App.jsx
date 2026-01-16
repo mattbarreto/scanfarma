@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-do
 import { useState, useEffect } from 'react'
 import { onAuthStateChange, logout, getSession, getUserProfile } from './lib/authService'
 import UserMenu from './components/UserMenu'
+import Icon from './components/Icon'
 import LoadProduct from './pages/LoadProduct'
 import Alerts from './pages/Alerts'
 import Inventory from './pages/Inventory'
@@ -11,6 +12,8 @@ import About from './pages/About'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import './index.css'
+
+import { supabase } from './lib/supabase'
 
 // Protected route wrapper
 function ProtectedRoute({ children, session }) {
@@ -25,12 +28,17 @@ function App() {
   const [profile, setProfile] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Badge States
+  const [expiredCount, setExpiredCount] = useState(0)
+  const [expiringCount, setExpiringCount] = useState(0)
+
   useEffect(() => {
     // Obtener sesión inicial
     getSession().then(sess => {
       setSession(sess)
       if (sess?.user) {
         loadProfile(sess.user.id)
+        fetchBadgeCounts()
       }
       setIsLoading(false)
     })
@@ -42,8 +50,11 @@ function App() {
 
       if (sess?.user) {
         loadProfile(sess.user.id)
+        fetchBadgeCounts()
       } else {
         setProfile(null)
+        setExpiredCount(0)
+        setExpiringCount(0)
       }
     })
 
@@ -55,10 +66,31 @@ function App() {
     setProfile(data)
   }
 
+  const fetchBadgeCounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('batches_with_status')
+        .select('status')
+        .in('status', ['EXPIRED', 'EXPIRING'])
+
+      if (error) throw error
+
+      const expired = data.filter(b => b.status === 'EXPIRED').length
+      const expiring = data.filter(b => b.status === 'EXPIRING').length
+
+      setExpiredCount(expired)
+      setExpiringCount(expiring)
+    } catch (err) {
+      console.error('Error fetching badge counts:', err)
+    }
+  }
+
   const handleLogout = async () => {
     await logout()
     setSession(null)
     setProfile(null)
+    setExpiredCount(0)
+    setExpiringCount(0)
   }
 
   // Loading state
@@ -89,6 +121,21 @@ function App() {
     )
   }
 
+  // Badge Logic Calculation
+  let badgeContent = null
+  let badgeClass = ''
+  let badgeLabel = ''
+
+  if (expiredCount > 0) {
+    badgeContent = expiredCount > 99 ? '99+' : expiredCount
+    badgeClass = 'error'
+    badgeLabel = `${expiredCount} productos vencidos`
+  } else if (expiringCount > 0) {
+    badgeContent = expiringCount > 99 ? '99+' : expiringCount
+    badgeClass = 'warning'
+    badgeLabel = `${expiringCount} productos por vencer`
+  }
+
   // Logged in - show app
   return (
     <BrowserRouter>
@@ -112,19 +159,30 @@ function App() {
       {/* Bottom Navigation */}
       <nav className="bottom-nav">
         <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <span className="nav-icon">📦</span>
+          <span className="nav-icon"><Icon name="package" size={24} /></span>
           <span className="nav-label">Cargar</span>
         </NavLink>
         <NavLink to="/alertas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <span className="nav-icon">🔔</span>
+          <span className="nav-icon">
+            <Icon name="bell" size={24} />
+            {badgeContent && (
+              <span
+                key={`${badgeClass}-${badgeContent}`} // Key forces animation reset on change
+                className={`notification-badge ${badgeClass}`}
+                aria-label={badgeLabel}
+              >
+                {badgeContent}
+              </span>
+            )}
+          </span>
           <span className="nav-label">Alertas</span>
         </NavLink>
         <NavLink to="/inteligencia" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <span className="nav-icon">🧠</span>
+          <span className="nav-icon"><Icon name="brain" size={24} /></span>
           <span className="nav-label">Inteligencia</span>
         </NavLink>
         <NavLink to="/inventario" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <span className="nav-icon">📋</span>
+          <span className="nav-icon"><Icon name="clipboard" size={24} /></span>
           <span className="nav-label">Inventario</span>
         </NavLink>
       </nav>

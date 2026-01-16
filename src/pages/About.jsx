@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Icon from '../components/Icon'
 
 export default function About() {
     const appVersion = '2.0.0'
@@ -7,20 +8,26 @@ export default function About() {
     return (
         <div className="app-container">
             <div className="page-header">
-                <Link to="/" className="back-button">←</Link>
-                <h1>ℹ️ Acerca de</h1>
+                <Link to="/" className="back-button" aria-label="Volver">
+                    <Icon name="chevronLeft" size={24} />
+                </Link>
+                <h1><Icon name="info" size={32} style={{ marginRight: 'var(--space-sm)' }} /> Acerca de</h1>
             </div>
 
             {/* App Info Card */}
             <div className="about-hero">
-                <div className="about-icon">💊</div>
+                <div className="about-icon">
+                    <Icon name="pill" size={48} style={{ color: 'var(--color-primary)' }} />
+                </div>
                 <h2 className="about-title">ScanFarma</h2>
                 <p className="about-version">v{appVersion}</p>
             </div>
 
             {/* Purpose */}
             <div className="card">
-                <h3 className="about-section-title">📋 ¿Qué es ScanFarma?</h3>
+                <h3 className="about-section-title">
+                    <Icon name="clipboard" size={20} style={{ marginRight: 8 }} /> ¿Qué es ScanFarma?
+                </h3>
                 <p className="about-text">
                     Sistema de inteligencia de rotación para farmacias. Controla vencimientos,
                     integra ventas automáticamente y genera insights para reducir pérdidas.
@@ -29,14 +36,16 @@ export default function About() {
 
             {/* Features */}
             <div className="card">
-                <h3 className="about-section-title">✨ Características</h3>
+                <h3 className="about-section-title">
+                    <Icon name="star" size={20} style={{ marginRight: 8 }} /> Características
+                </h3>
                 <ul className="about-list">
-                    <li>📷 Escaneo de código de barras</li>
-                    <li>📅 OCR de fechas de vencimiento</li>
-                    <li>📥 Integración de ventas (FIFO)</li>
-                    <li>🧠 Inteligencia de rotación</li>
-                    <li>📊 Métricas y sugerencias</li>
-                    <li>🔔 Alertas inteligentes</li>
+                    <li><Icon name="scan" size={16} /> Escaneo de código de barras</li>
+                    <li><Icon name="calendar" size={16} /> OCR de fechas de vencimiento</li>
+                    <li><Icon name="download" size={16} /> Integración de ventas (FIFO)</li>
+                    <li><Icon name="brain" size={16} /> Inteligencia de rotación</li>
+                    <li><Icon name="chart" size={16} /> Métricas y sugerencias</li>
+                    <li><Icon name="bell" size={16} /> Alertas inteligentes</li>
                 </ul>
             </div>
 
@@ -45,7 +54,9 @@ export default function About() {
                 background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%)',
                 borderLeft: '4px solid var(--color-primary)'
             }}>
-                <h3 className="about-section-title">💼 Para tu farmacia</h3>
+                <h3 className="about-section-title">
+                    <Icon name="briefcase" size={20} style={{ marginRight: 8 }} /> Para tu farmacia
+                </h3>
                 <p className="about-text" style={{ marginBottom: 'var(--space-md)' }}>
                     ScanFarma está disponible como servicio para farmacias.
                     Reducí pérdidas por vencimientos y optimizá tu stock.
@@ -53,15 +64,17 @@ export default function About() {
                 <a
                     href="mailto:matiasbarreto@gmail.com?subject=Consulta%20ScanFarma"
                     className="btn btn-primary"
-                    style={{ textDecoration: 'none', display: 'inline-flex' }}
+                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
                 >
-                    📧 Solicitar información
+                    <Icon name="mail" size={20} /> Solicitar información
                 </a>
             </div>
 
             {/* Links */}
             <div className="card">
-                <h3 className="about-section-title">🔗 Enlaces</h3>
+                <h3 className="about-section-title">
+                    <Icon name="link" size={20} style={{ marginRight: 8 }} /> Enlaces
+                </h3>
                 <div className="about-links">
                     <a
                         href="https://github.com/mattbarreto/scanfarma"
@@ -69,12 +82,12 @@ export default function About() {
                         rel="noopener noreferrer"
                         className="about-link"
                     >
-                        <span className="about-link-icon">📦</span>
+                        <span className="about-link-icon"><Icon name="package" size={24} /></span>
                         <span className="about-link-text">
                             <strong>Código fuente</strong>
                             <small>github.com/mattbarreto/scanfarma</small>
                         </span>
-                        <span className="about-link-arrow">→</span>
+                        <span className="about-link-arrow"><Icon name="chevronRight" size={20} /></span>
                     </a>
                     <a
                         href="https://matiasbarreto.com/"
@@ -82,12 +95,12 @@ export default function About() {
                         rel="noopener noreferrer"
                         className="about-link"
                     >
-                        <span className="about-link-icon">🌐</span>
+                        <span className="about-link-icon"><Icon name="globe" size={24} /></span>
                         <span className="about-link-text">
                             <strong>Desarrollador</strong>
                             <small>matiasbarreto.com</small>
                         </span>
-                        <span className="about-link-arrow">→</span>
+                        <span className="about-link-arrow"><Icon name="chevronRight" size={20} /></span>
                     </a>
                 </div>
             </div>

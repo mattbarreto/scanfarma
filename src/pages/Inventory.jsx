@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import Icon from '../components/Icon'
 import { supabase } from '../lib/supabase'
 
 export default function Inventory() {
@@ -87,9 +88,9 @@ export default function Inventory() {
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'EXPIRED': return '🔴'
-            case 'EXPIRING': return '🟡'
-            default: return '🟢'
+            case 'EXPIRED': return <Icon name="alertTriangle" size={16} style={{ color: 'var(--status-expired)' }} />
+            case 'EXPIRING': return <Icon name="alertTriangle" size={16} style={{ color: 'var(--status-expiring)' }} />
+            default: return <Icon name="check" size={16} style={{ color: 'var(--status-valid)' }} />
         }
     }
 
@@ -113,8 +114,7 @@ export default function Inventory() {
     return (
         <div className="app-container">
             <div className="page-header">
-                <Link to="/" className="back-button">←</Link>
-                <h1>📋 Inventario</h1>
+                <h1><Icon name="clipboard" size={32} style={{ marginRight: 'var(--space-sm)' }} /> Inventario</h1>
             </div>
 
             {/* Search bar */}
@@ -125,6 +125,7 @@ export default function Inventory() {
                     placeholder="🔍 Buscar por nombre, código o lote..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    aria-label="Buscar producto por nombre, código o lote"
                 />
             </div>
 
@@ -140,19 +141,19 @@ export default function Inventory() {
                     className={`alert-tab ${filter === 'VALID' ? 'active' : ''}`}
                     onClick={() => setFilter('VALID')}
                 >
-                    🟢 Válidos
+                    <Icon name="check" size={14} style={{ marginRight: 4 }} /> Válidos
                 </button>
                 <button
                     className={`alert-tab ${filter === 'EXPIRING' ? 'active' : ''}`}
                     onClick={() => setFilter('EXPIRING')}
                 >
-                    🟡 Por vencer
+                    <Icon name="alertTriangle" size={14} style={{ marginRight: 4 }} /> Por vencer
                 </button>
                 <button
                     className={`alert-tab ${filter === 'EXPIRED' ? 'active' : ''}`}
                     onClick={() => setFilter('EXPIRED')}
                 >
-                    🔴 Vencidos
+                    <Icon name="alertTriangle" size={14} style={{ marginRight: 4 }} /> Vencidos
                 </button>
             </div>
 
@@ -183,7 +184,7 @@ export default function Inventory() {
             {/* Empty state */}
             {!isLoading && filteredBatches.length === 0 && (
                 <div className="empty-state">
-                    <span className="icon">📦</span>
+                    <Icon name="package" size={48} style={{ marginBottom: 'var(--space-md)', color: 'var(--text-muted)' }} />
                     <p>No hay productos en el inventario</p>
                     <Link to="/" className="btn btn-primary mt-md" style={{ width: 'auto' }}>
                         + Agregar producto
@@ -216,8 +217,8 @@ export default function Inventory() {
                                     borderBottom: '1px solid var(--border-color)'
                                 }}
                             >
-                                <div style={{ fontSize: 'var(--font-size-sm)' }}>
-                                    <span>{getStatusIcon(batch.status)} </span>
+                                <div style={{ fontSize: 'var(--font-size-sm)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {getStatusIcon(batch.status)}
                                     <span>Lote: {batch.lot_number}</span>
                                     <span style={{ color: 'var(--text-muted)', marginLeft: 'var(--space-sm)' }}>
                                         (x{batch.quantity_remaining || batch.quantity})
