@@ -2,7 +2,7 @@
 
 > Sistema de control de vencimientos e inteligencia de rotación para farmacias.
 
-[![Deploy Status](https://api.netlify.com/api/v1/badges/scanfarma/deploy-status)](https://scanfarma.netlify.app)
+**[🌐 Ver Demo en Vivo](https://scanfarma.netlify.app)**
 
 ![ScanFarma Preview](public/og-image.png)
 
