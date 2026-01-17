@@ -142,7 +142,8 @@ export default function LoadProduct() {
                     .insert({
                         barcode,
                         name: newProductName,
-                        brand: newProductBrand || null
+                        brand: newProductBrand || null,
+                        user_id: user.id  // Multi-tenant: asociar al usuario actual
                     })
                     .select()
                     .single()
@@ -167,8 +168,9 @@ export default function LoadProduct() {
                     lot_number: lotNumber,
                     expiration_date: expirationDate,
                     quantity: quantity,
-                    quantity_remaining: quantity,  // Track remaining stock (for sales integration)
-                    location: location || null
+                    quantity_remaining: quantity,
+                    location: location || null,
+                    user_id: user.id  // Multi-tenant: asociar al usuario actual
                 })
 
             if (batchError) {

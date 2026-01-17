@@ -30,5 +30,8 @@ dist-ssr
 .env.*.local
 
 # Base de datos (no compartir estructura)
+# Base de datos y funciones (Propietario / No compartir)
 supabase/migrations/
+supabase/functions/
+supabase/.temp/
 

@@ -88,10 +88,11 @@ export default function Intelligence() {
     // Calculate health score (0-100)
     const calculateHealthScore = () => {
         if (!stats) return 100
-        const wasteImpact = Math.min(stats.avgWasteRatio * 2, 40)
-        const riskImpact = Math.min(stats.highRiskCount * 5, 30)
+        const wasteImpact = Math.min(stats.avgWasteRatio * 2, 30)
+        // Productos VENCIDOS tienen mayor impacto negativo
+        const expiredImpact = Math.min((stats.unitsExpired || 0) * 10, 40)
         const expiringImpact = Math.min(stats.unitsExpiring20d * 2, 30)
-        return Math.max(0, Math.round(100 - wasteImpact - riskImpact - expiringImpact))
+        return Math.max(0, Math.round(100 - wasteImpact - expiredImpact - expiringImpact))
     }
 
     const healthScore = calculateHealthScore()
@@ -198,10 +199,10 @@ export default function Intelligence() {
                             <span className="metric-label">Pérdida</span>
                         </div>
                         <div className="health-metric">
-                            <span className="metric-value" style={{ color: stats.highRiskCount > 0 ? COLORS.danger : 'inherit' }}>
-                                {stats.highRiskCount}
+                            <span className="metric-value" style={{ color: (stats.unitsExpired || 0) > 0 ? COLORS.danger : 'inherit' }}>
+                                {stats.unitsExpired || 0}
                             </span>
-                            <span className="metric-label">Alto Riesgo</span>
+                            <span className="metric-label">Vencidos</span>
                         </div>
                         <div className="health-metric">
                             <span className="metric-value" style={{ color: stats.unitsExpiring20d > 0 ? COLORS.warning : 'inherit' }}>

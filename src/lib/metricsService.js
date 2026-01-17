@@ -50,22 +50,24 @@ export async function getProductMetrics(productId) {
         const wastePercentage = totalPurchased > 0 ? (totalWasted / totalPurchased) * 100 : 0
 
         // 6. Identificar lotes próximos a vencer
-        const today = new Date()
-        const in15Days = new Date(today)
+        // Usar comparación de strings ISO para evitar bugs de timezone
+        const todayStr = new Date().toISOString().split('T')[0] // 'YYYY-MM-DD'
+        const in15Days = new Date()
         in15Days.setDate(in15Days.getDate() + 15)
+        const in15DaysStr = in15Days.toISOString().split('T')[0]
 
-        const expiringBatches = batches.filter(b => {
-            const expDate = new Date(b.expiration_date)
-            return b.quantity_remaining > 0 && expDate <= in15Days && expDate >= today
-        })
-
+        // EXPIRED: vence HOY o antes (<= today)
         const expiredBatches = batches.filter(b => {
-            const expDate = new Date(b.expiration_date)
-            return b.quantity_remaining > 0 && expDate < today
+            return b.quantity_remaining > 0 && b.expiration_date <= todayStr
         })
 
-        const unitsExpiring = expiringBatches.reduce((sum, b) => sum + b.quantity_remaining, 0)
+        // EXPIRING: vence en los próximos 15 días (después de hoy, antes de +15d)
+        const expiringBatches = batches.filter(b => {
+            return b.quantity_remaining > 0 && b.expiration_date > todayStr && b.expiration_date <= in15DaysStr
+        })
+
         const unitsExpired = expiredBatches.reduce((sum, b) => sum + b.quantity_remaining, 0)
+        const unitsExpiring = expiringBatches.reduce((sum, b) => sum + b.quantity_remaining, 0)
 
         return {
             data: {
@@ -114,9 +116,11 @@ export async function getHighRiskProducts(wasteThreshold = 20, limit = 20) {
             return { data: [], error: 'Error al obtener productos' }
         }
 
-        const today = new Date()
-        const in15Days = new Date(today)
+        // Usar comparación de strings ISO para evitar bugs de timezone
+        const todayStr = new Date().toISOString().split('T')[0]
+        const in15Days = new Date()
         in15Days.setDate(in15Days.getDate() + 15)
+        const in15DaysStr = in15Days.toISOString().split('T')[0]
 
         const riskProducts = []
 
@@ -131,10 +135,9 @@ export async function getHighRiskProducts(wasteThreshold = 20, limit = 20) {
             const totalWasted = wasteSummary?.total || 0
             const wastePercentage = totalPurchased > 0 ? (totalWasted / totalPurchased) * 100 : 0
 
-            // Lotes por vencer
+            // Lotes por vencer (FUTURO, no incluye hoy)
             const expiringBatches = product.batches.filter(b => {
-                const expDate = new Date(b.expiration_date)
-                return b.quantity_remaining > 0 && expDate <= in15Days && expDate >= today
+                return b.quantity_remaining > 0 && b.expiration_date > todayStr && b.expiration_date <= in15DaysStr
             })
 
             const unitsExpiring = expiringBatches.reduce((sum, b) => sum + b.quantity_remaining, 0)
@@ -323,25 +326,90 @@ export async function getProductsWithIntelligence(limit = 50) {
 // ============================================
 
 /**
- * Obtiene métricas desde la vista product_expiration_metrics
- * Más eficiente que calcular en JS
+ * Obtiene métricas calculadas directamente desde tablas (respeta RLS)
  * @param {number} limit 
  * @returns {Promise<{data: Array, error?: string}>}
  */
 export async function getProductMetricsFromView(limit = 50) {
     try {
-        const { data, error } = await supabase
-            .from('product_expiration_metrics')
-            .select('*')
-            .order('risk_score', { ascending: false })
+        // Query directa a productos y lotes (respeta RLS)
+        const { data: products, error: prodError } = await supabase
+            .from('products')
+            .select(`
+                id,
+                name,
+                barcode,
+                brand,
+                batches (
+                    id,
+                    quantity,
+                    quantity_remaining,
+                    expiration_date
+                )
+            `)
             .limit(limit)
 
-        if (error) {
-            console.error('Error fetching metrics view:', error)
+        if (prodError) {
+            console.error('Error fetching products:', prodError)
             return { data: [], error: 'Error al obtener métricas' }
         }
 
-        return { data }
+        // Obtener waste events
+        const { data: wasteEvents } = await supabase
+            .from('waste_events')
+            .select('product_id, quantity')
+
+        // Calcular métricas por producto
+        const today = new Date().toISOString().split('T')[0]
+        const in20Days = new Date()
+        in20Days.setDate(in20Days.getDate() + 20)
+        const in20DaysStr = in20Days.toISOString().split('T')[0]
+
+        const metrics = products.map(p => {
+            const batches = p.batches || []
+            const wasteForProduct = (wasteEvents || []).filter(w => w.product_id === p.id)
+
+            const totalUnitsLoaded = batches.reduce((sum, b) => sum + (b.quantity || 0), 0)
+            const totalUnitsWasted = wasteForProduct.reduce((sum, w) => sum + (w.quantity || 0), 0)
+            const currentStock = batches.reduce((sum, b) => sum + (b.quantity_remaining || 0), 0)
+
+            const unitsExpired = batches
+                .filter(b => b.quantity_remaining > 0 && b.expiration_date <= today)
+                .reduce((sum, b) => sum + b.quantity_remaining, 0)
+
+            const unitsExpiring20d = batches
+                .filter(b => b.quantity_remaining > 0 && b.expiration_date > today && b.expiration_date <= in20DaysStr)
+                .reduce((sum, b) => sum + b.quantity_remaining, 0)
+
+            const wasteRatio = totalUnitsLoaded > 0
+                ? Math.round((totalUnitsWasted / totalUnitsLoaded) * 100 * 10) / 10
+                : 0
+
+            const riskScore = Math.min(100, Math.round(
+                (wasteRatio * 0.4) +
+                (currentStock > 0 ? (unitsExpired / currentStock) * 30 : 0) +
+                (currentStock > 0 ? (unitsExpiring20d / currentStock) * 30 : 0)
+            ))
+
+            return {
+                product_id: p.id,
+                name: p.name,
+                barcode: p.barcode,
+                supplier: p.brand,
+                total_units_loaded: totalUnitsLoaded,
+                total_units_wasted: totalUnitsWasted,
+                current_stock: currentStock,
+                waste_ratio: wasteRatio,
+                units_expired: unitsExpired,
+                units_expiring_20d: unitsExpiring20d,
+                risk_score: riskScore
+            }
+        })
+
+        // Ordenar por risk_score
+        metrics.sort((a, b) => b.risk_score - a.risk_score)
+
+        return { data: metrics }
 
     } catch (err) {
         console.error('Error:', err)
@@ -350,25 +418,20 @@ export async function getProductMetricsFromView(limit = 50) {
 }
 
 /**
- * Top N productos por pérdida
+ * Top N productos por pérdida (query directa, respeta RLS)
  * @param {number} limit 
  * @returns {Promise<{data: Array, error?: string}>}
  */
 export async function getTopWasteProducts(limit = 5) {
     try {
-        const { data, error } = await supabase
-            .from('product_expiration_metrics')
-            .select('product_id, name, barcode, total_units_wasted, waste_ratio, risk_score')
-            .gt('total_units_wasted', 0)
-            .order('total_units_wasted', { ascending: false })
-            .limit(limit)
+        const { data: metrics } = await getProductMetricsFromView(100)
 
-        if (error) {
-            console.error('Error fetching top waste:', error)
-            return { data: [], error: 'Error al obtener datos' }
-        }
+        const topWaste = (metrics || [])
+            .filter(m => m.total_units_wasted > 0)
+            .sort((a, b) => b.total_units_wasted - a.total_units_wasted)
+            .slice(0, limit)
 
-        return { data }
+        return { data: topWaste }
 
     } catch (err) {
         console.error('Error:', err)
@@ -377,25 +440,74 @@ export async function getTopWasteProducts(limit = 5) {
 }
 
 /**
- * Top N productos por riesgo próximo (vencen pronto)
+ * Top N productos por riesgo próximo (query directa, respeta RLS)
  * @param {number} limit 
  * @returns {Promise<{data: Array, error?: string}>}
  */
 export async function getTopRiskProducts(limit = 5) {
     try {
-        const { data, error } = await supabase
-            .from('forecast_risk')
-            .select('product_id, name, barcode, units_expiring_30d, days_to_next_expiry, suggested_order_adjustment')
-            .gt('units_expiring_30d', 0)
-            .order('units_expiring_30d', { ascending: false })
-            .limit(limit)
+        // Query directa a productos y lotes
+        const { data: products, error } = await supabase
+            .from('products')
+            .select(`
+                id,
+                name,
+                barcode,
+                batches (
+                    quantity_remaining,
+                    expiration_date
+                )
+            `)
 
         if (error) {
-            console.error('Error fetching top risk:', error)
+            console.error('Error fetching products:', error)
             return { data: [], error: 'Error al obtener datos' }
         }
 
-        return { data }
+        const today = new Date().toISOString().split('T')[0]
+        const in30Days = new Date()
+        in30Days.setDate(in30Days.getDate() + 30)
+        const in30DaysStr = in30Days.toISOString().split('T')[0]
+
+        const riskProducts = products
+            .map(p => {
+                const batches = p.batches || []
+
+                const unitsExpired = batches
+                    .filter(b => b.quantity_remaining > 0 && b.expiration_date <= today)
+                    .reduce((sum, b) => sum + b.quantity_remaining, 0)
+
+                const unitsExpiring30d = batches
+                    .filter(b => b.quantity_remaining > 0 && b.expiration_date > today && b.expiration_date <= in30DaysStr)
+                    .reduce((sum, b) => sum + b.quantity_remaining, 0)
+
+                // Calcular días al próximo vencimiento
+                const futureExpirations = batches
+                    .filter(b => b.quantity_remaining > 0 && b.expiration_date > today)
+                    .map(b => b.expiration_date)
+                    .sort()
+
+                let daysToNextExpiry = null
+                if (futureExpirations.length > 0) {
+                    const nextExp = new Date(futureExpirations[0])
+                    const todayDate = new Date(today)
+                    daysToNextExpiry = Math.ceil((nextExp - todayDate) / (1000 * 60 * 60 * 24))
+                }
+
+                return {
+                    product_id: p.id,
+                    name: p.name,
+                    barcode: p.barcode,
+                    units_expired: unitsExpired,
+                    units_expiring_30d: unitsExpiring30d,
+                    days_to_next_expiry: daysToNextExpiry
+                }
+            })
+            .filter(p => p.units_expiring_30d > 0)
+            .sort((a, b) => b.units_expiring_30d - a.units_expiring_30d)
+            .slice(0, limit)
+
+        return { data: riskProducts }
 
     } catch (err) {
         console.error('Error:', err)
@@ -404,17 +516,17 @@ export async function getTopRiskProducts(limit = 5) {
 }
 
 /**
- * Obtiene tendencias mensuales de pérdida
+ * Obtiene tendencias mensuales de pérdida (query directa, respeta RLS)
  * @param {number} months 
  * @returns {Promise<{data: Array, error?: string}>}
  */
 export async function getMonthlyTrends(months = 6) {
     try {
+        // Query directa a waste_events (respeta RLS)
         const { data, error } = await supabase
-            .from('time_based_waste')
-            .select('month, wasted_units, sold_units')
-            .order('month', { ascending: false })
-            .limit(months * 10) // Get more and aggregate in JS
+            .from('waste_events')
+            .select('event_date, quantity')
+            .order('event_date', { ascending: false })
 
         if (error) {
             console.error('Error fetching trends:', error)
@@ -424,11 +536,11 @@ export async function getMonthlyTrends(months = 6) {
         // Agregar por mes
         const byMonth = {}
         for (const row of data) {
-            if (!byMonth[row.month]) {
-                byMonth[row.month] = { month: row.month, wasted: 0, sold: 0 }
+            const month = row.event_date.substring(0, 7) // YYYY-MM
+            if (!byMonth[month]) {
+                byMonth[month] = { month, wasted: 0, sold: 0 }
             }
-            byMonth[row.month].wasted += row.wasted_units
-            byMonth[row.month].sold += row.sold_units
+            byMonth[month].wasted += row.quantity
         }
 
         return { data: Object.values(byMonth).slice(0, months) }
@@ -440,18 +552,16 @@ export async function getMonthlyTrends(months = 6) {
 }
 
 /**
- * Obtiene estadísticas globales para el dashboard
+ * Obtiene estadísticas globales para el dashboard (query directa, respeta RLS)
  * @returns {Promise<{data: object, error?: string}>}
  */
 export async function getDashboardStats() {
     try {
-        const { data: metrics, error } = await supabase
-            .from('product_expiration_metrics')
-            .select('total_units_wasted, waste_ratio, risk_score, units_expiring_20d')
+        // Usar getProductMetricsFromView que ya usa queries directas
+        const { data: metrics, error } = await getProductMetricsFromView(100)
 
         if (error) {
-            console.error('Error fetching stats:', error)
-            return { data: null, error: 'Error al obtener estadísticas' }
+            return { data: null, error }
         }
 
         const stats = {
@@ -460,7 +570,8 @@ export async function getDashboardStats() {
             avgWasteRatio: metrics.length > 0
                 ? Math.round(metrics.reduce((sum, m) => sum + (m.waste_ratio || 0), 0) / metrics.length * 10) / 10
                 : 0,
-            highRiskCount: metrics.filter(m => m.risk_score >= 60).length,
+            highRiskCount: metrics.filter(m => (m.units_expired || 0) > 0 || m.risk_score >= 60).length,
+            unitsExpired: metrics.reduce((sum, m) => sum + (m.units_expired || 0), 0),
             unitsExpiring20d: metrics.reduce((sum, m) => sum + (m.units_expiring_20d || 0), 0)
         }
 
@@ -473,57 +584,53 @@ export async function getDashboardStats() {
 }
 
 /**
- * Obtiene sugerencias centralizadas desde todos los productos
+ * Obtiene sugerencias centralizadas (query directa, respeta RLS)
  * @returns {Promise<{data: Array, error?: string}>}
  */
 export async function getAllSuggestions() {
     try {
-        const { data: forecast, error } = await supabase
-            .from('forecast_risk')
-            .select('product_id, name, units_expiring_30d, days_to_next_expiry, waste_ratio, suggested_order_adjustment')
-            .or('units_expiring_30d.gt.0,waste_ratio.gte.15')
-            .order('units_expiring_30d', { ascending: false })
-            .limit(20)
+        // Usar getProductMetricsFromView que ya usa queries directas
+        const { data: metrics } = await getProductMetricsFromView(50)
 
-        if (error) {
-            console.error('Error fetching suggestions:', error)
-            return { data: [], error: 'Error al obtener sugerencias' }
+        if (!metrics || metrics.length === 0) {
+            return { data: [] }
         }
 
         const suggestions = []
 
-        for (const p of forecast) {
-            // Reducir pedido
-            if (p.suggested_order_adjustment < 0) {
+        for (const p of metrics) {
+            // Registrar pérdida para productos VENCIDOS
+            if ((p.units_expired || 0) > 0) {
+                suggestions.push({
+                    type: 'register_waste',
+                    productId: p.product_id,
+                    productName: p.name,
+                    message: `Registrar ${p.units_expired} unidades vencidas como pérdida`,
+                    priority: 'high',
+                    icon: '⚠️'
+                })
+            }
+
+            // Reducir pedido (basado en historial de pérdida)
+            if (p.waste_ratio >= 20) {
+                const adjustment = p.waste_ratio >= 30 ? -30 : p.waste_ratio >= 20 ? -20 : -10
                 suggestions.push({
                     type: 'reduce_order',
                     productId: p.product_id,
                     productName: p.name,
-                    message: `Reducir pedido ${Math.abs(p.suggested_order_adjustment)}%`,
-                    priority: p.suggested_order_adjustment <= -30 ? 'high' : 'medium',
+                    message: `Reducir pedido ${Math.abs(adjustment)}%`,
+                    priority: adjustment <= -30 ? 'high' : 'medium',
                     icon: '📉'
                 })
             }
 
-            // Liquidar stock
-            if (p.units_expiring_30d >= 10 && p.days_to_next_expiry <= 15) {
-                suggestions.push({
-                    type: 'liquidate',
-                    productId: p.product_id,
-                    productName: p.name,
-                    message: `Liquidar ${p.units_expiring_30d} unidades (${p.days_to_next_expiry} días)`,
-                    priority: 'high',
-                    icon: '🏷️'
-                })
-            }
-
-            // Priorizar venta
-            if (p.units_expiring_30d > 0 && p.units_expiring_30d < 10 && p.days_to_next_expiry <= 20) {
+            // Priorizar venta (productos por vencer pronto)
+            if ((p.units_expiring_20d || 0) > 0 && (p.units_expiring_20d || 0) < 10) {
                 suggestions.push({
                     type: 'prioritize_sale',
                     productId: p.product_id,
                     productName: p.name,
-                    message: `Priorizar venta (${p.units_expiring_30d} uds vencen en ${p.days_to_next_expiry} días)`,
+                    message: `Priorizar venta (${p.units_expiring_20d} uds por vencer)`,
                     priority: 'medium',
                     icon: '📢'
                 })

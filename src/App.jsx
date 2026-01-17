@@ -68,15 +68,30 @@ function App() {
 
   const fetchBadgeCounts = async () => {
     try {
+      // Query directa a tabla batches (respeta RLS)
       const { data, error } = await supabase
-        .from('batches_with_status')
-        .select('status')
-        .in('status', ['EXPIRED', 'EXPIRING'])
+        .from('batches')
+        .select('expiration_date, quantity_remaining')
+        .gt('quantity_remaining', 0)
 
       if (error) throw error
 
-      const expired = data.filter(b => b.status === 'EXPIRED').length
-      const expiring = data.filter(b => b.status === 'EXPIRING').length
+      // Calcular status en JS (misma lógica que tenía la vista)
+      const today = new Date().toISOString().split('T')[0]
+      const in30Days = new Date()
+      in30Days.setDate(in30Days.getDate() + 30)
+      const in30DaysStr = in30Days.toISOString().split('T')[0]
+
+      let expired = 0
+      let expiring = 0
+
+      for (const batch of data) {
+        if (batch.expiration_date <= today) {
+          expired++
+        } else if (batch.expiration_date <= in30DaysStr) {
+          expiring++
+        }
+      }
 
       setExpiredCount(expired)
       setExpiringCount(expiring)

@@ -18,9 +18,9 @@ export default function Inventory() {
     const fetchBatches = async () => {
         setIsLoading(true)
         try {
-            // Usamos la vista batches_with_status que calcula el estado
+            // Query directa a tabla batches (respeta RLS)
             let query = supabase
-                .from('batches_with_status')
+                .from('batches')
                 .select(`
           *,
           products (
@@ -30,10 +30,8 @@ export default function Inventory() {
             barcode
           )
         `)
+                .gt('quantity_remaining', 0)
                 .order('expiration_date', { ascending: true })
-
-            // Removed server-side filter to calculate global counts correctly
-            // if (filter !== 'ALL') { ... }
 
             const { data, error } = await query
 
@@ -43,7 +41,20 @@ export default function Inventory() {
                 return
             }
 
-            setBatches(data || [])
+            // Calcular status en JS (misma lógica que tenía la vista)
+            const today = new Date().toISOString().split('T')[0]
+            const in30Days = new Date()
+            in30Days.setDate(in30Days.getDate() + 30)
+            const in30DaysStr = in30Days.toISOString().split('T')[0]
+
+            const batchesWithStatus = (data || []).map(batch => ({
+                ...batch,
+                status: batch.expiration_date <= today ? 'EXPIRED'
+                    : batch.expiration_date <= in30DaysStr ? 'EXPIRING'
+                        : 'VALID'
+            }))
+
+            setBatches(batchesWithStatus)
         } catch (err) {
             console.error('Error:', err)
             showToast('Error de conexión', 'error')
@@ -76,13 +87,12 @@ export default function Inventory() {
     })
 
     const formatDate = (dateStr) => {
-        const date = new Date(dateStr)
-        return date.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        })
+        if (!dateStr) return '-'
+        // Parsear directamente el string YYYY-MM-DD para evitar problemas de timezone
+        const [year, month, day] = dateStr.split('-')
+        return `${day}/${month}/${year}`
     }
+
 
     const getStatusClass = (status) => {
         switch (status) {

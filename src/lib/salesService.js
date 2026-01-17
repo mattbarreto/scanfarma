@@ -18,6 +18,12 @@ import { supabase } from './supabase'
  */
 export async function processSale(barcode, quantity, saleDate, source = 'manual', externalRef = null) {
     try {
+        // Obtener el usuario actual
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            return { success: false, error: 'Usuario no autenticado' }
+        }
+
         // 1. Registrar el evento de venta
         const { data: saleEvent, error: saleError } = await supabase
             .from('sale_events')
@@ -27,7 +33,8 @@ export async function processSale(barcode, quantity, saleDate, source = 'manual'
                 sale_date: saleDate,
                 source,
                 external_ref: externalRef,
-                processed: false
+                processed: false,
+                user_id: user.id  // Multi-tenant: asociar al usuario actual
             })
             .select()
             .single()
@@ -257,7 +264,7 @@ export async function getProductBatches(barcode) {
             return { data: [], error: 'Error al obtener lotes' }
         }
 
-        return { 
+        return {
             data: data.map(b => ({
                 ...b,
                 product_name: product.name

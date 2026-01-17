@@ -24,8 +24,9 @@ export default function Alerts() {
     const fetchBatches = async () => {
         setIsLoading(true)
         try {
+            // Query directa a tabla batches (respeta RLS)
             let query = supabase
-                .from('batches_with_status')
+                .from('batches')
                 .select(`
           *,
           products (
@@ -35,15 +36,8 @@ export default function Alerts() {
             barcode
           )
         `)
+                .gt('quantity_remaining', 0)
                 .order('expiration_date', { ascending: true })
-
-            if (filter === 'EXPIRED') {
-                query = query.eq('status', 'EXPIRED')
-            } else if (filter === 'EXPIRING') {
-                query = query.eq('status', 'EXPIRING')
-            } else {
-                query = query.in('status', ['EXPIRED', 'EXPIRING'])
-            }
 
             const { data, error } = await query
 
@@ -53,7 +47,25 @@ export default function Alerts() {
                 return
             }
 
-            setBatches(data || [])
+            // Calcular status en JS (misma lógica que tenía la vista)
+            const today = new Date().toISOString().split('T')[0]
+            const in30Days = new Date()
+            in30Days.setDate(in30Days.getDate() + 30)
+            const in30DaysStr = in30Days.toISOString().split('T')[0]
+
+            const batchesWithStatus = (data || []).map(batch => ({
+                ...batch,
+                status: batch.expiration_date <= today ? 'EXPIRED'
+                    : batch.expiration_date <= in30DaysStr ? 'EXPIRING'
+                        : 'VALID'
+            }))
+
+            // Filtrar solo EXPIRED y EXPIRING para alertas
+            const alertBatches = batchesWithStatus.filter(b =>
+                b.status === 'EXPIRED' || b.status === 'EXPIRING'
+            )
+
+            setBatches(alertBatches)
             setSelectedIds(new Set()) // Clear selection when filter changes
         } catch (err) {
             console.error('Error:', err)
@@ -73,6 +85,12 @@ export default function Alerts() {
     const expiredCount = batches.filter(b => b.status === 'EXPIRED').length
     const expiringCount = batches.filter(b => b.status === 'EXPIRING').length
 
+    // Filter batches by selected tab
+    const filteredBatches = batches.filter(batch => {
+        if (filter === 'ALL') return true
+        return batch.status === filter
+    })
+
     // Selection handlers
     const toggleSelection = (batchId) => {
         const newSelected = new Set(selectedIds)
@@ -85,14 +103,14 @@ export default function Alerts() {
     }
 
     const selectAll = () => {
-        if (selectedIds.size === batches.length) {
+        if (selectedIds.size === filteredBatches.length) {
             setSelectedIds(new Set())
         } else {
-            setSelectedIds(new Set(batches.map(b => b.id)))
+            setSelectedIds(new Set(filteredBatches.map(b => b.id)))
         }
     }
 
-    const isAllSelected = batches.length > 0 && selectedIds.size === batches.length
+    const isAllSelected = filteredBatches.length > 0 && selectedIds.size === filteredBatches.length
 
     // Bulk actions
     const handleBulkWaste = () => {
@@ -194,13 +212,11 @@ export default function Alerts() {
 
     const formatDate = (dateStr) => {
         if (!dateStr) return '-'
-        const date = new Date(dateStr)
-        return date.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        })
+        // Parsear directamente el string YYYY-MM-DD para evitar problemas de timezone
+        const [year, month, day] = dateStr.split('-')
+        return `${day}/${month}/${year}`
     }
+
 
     const getStatusClass = (status) => {
         switch (status) {
@@ -281,7 +297,7 @@ export default function Alerts() {
             </div>
 
             {/* Bulk Action Bar */}
-            {batches.length > 0 && !isLoading && (
+            {filteredBatches.length > 0 && !isLoading && (
                 <div className="bulk-action-bar">
                     <label className="bulk-select-all">
                         <input
@@ -315,7 +331,7 @@ export default function Alerts() {
             {/* Content */}
             {isLoading ? (
                 <LoadingSkeleton />
-            ) : batches.length === 0 ? (
+            ) : filteredBatches.length === 0 ? (
                 <EmptyState
                     type="success"
                     title="¡Todo limpio!"
@@ -323,7 +339,7 @@ export default function Alerts() {
                 />
             ) : (
                 <div className="animate-slide-up">
-                    {batches.map(batch => (
+                    {filteredBatches.map(batch => (
                         <div
                             key={batch.id}
                             className={`alert-item ${getStatusClass(batch.status)} ${selectedIds.has(batch.id) ? 'selected' : ''}`}

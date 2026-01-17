@@ -36,6 +36,12 @@ export async function recordWaste(batchId, quantity, reason, eventDate, notes = 
             }
         }
 
+        // Obtener el usuario actual
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            return { success: false, error: 'Usuario no autenticado' }
+        }
+
         // Registrar evento de pérdida
         const { data: wasteEvent, error: wasteError } = await supabase
             .from('waste_events')
@@ -45,7 +51,8 @@ export async function recordWaste(batchId, quantity, reason, eventDate, notes = 
                 quantity,
                 reason,
                 event_date: eventDate,
-                notes
+                notes,
+                user_id: user.id  // Multi-tenant: asociar al usuario actual
             })
             .select()
             .single()

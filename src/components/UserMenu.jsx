@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from './Icon'
+import DeleteAccountModal from './DeleteAccountModal'
 import { getNotificationRule, updateNotificationThreshold, toggleNotifications } from '../lib/notificationService'
 import { getUserProfile } from '../lib/authService'
+import { deleteUserAccount } from '../lib/accountService'
 
 export default function UserMenu({ userName, userId, onLogout }) {
     const [isOpen, setIsOpen] = useState(false)
@@ -11,6 +13,8 @@ export default function UserMenu({ userName, userId, onLogout }) {
     const [notificationsEnabled, setNotificationsEnabled] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [saveStatus, setSaveStatus] = useState(null) // 'success' | 'error' | null
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
     const menuRef = useRef(null)
     const navigate = useNavigate()
 
@@ -108,6 +112,25 @@ export default function UserMenu({ userName, userId, onLogout }) {
             setSaveStatus('error')
         } finally {
             setIsSaving(false)
+        }
+    }
+
+    const handleDeleteAccount = async () => {
+        setIsDeleting(true)
+        try {
+            const result = await deleteUserAccount()
+            if (result.success) {
+                // La función ya hace signOut, el App.jsx detectará el cambio
+                setShowDeleteModal(false)
+                setIsOpen(false)
+            } else {
+                alert(result.error || 'Error al eliminar cuenta')
+            }
+        } catch (err) {
+            console.error('Error deleting account:', err)
+            alert('Error de conexión')
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -228,6 +251,17 @@ export default function UserMenu({ userName, userId, onLogout }) {
                                     <span>Guardar cambios</span>
                                 )}
                             </button>
+
+                            {/* Danger Zone */}
+                            <div className="config-danger-zone">
+                                <button
+                                    className="config-delete-btn"
+                                    onClick={() => setShowDeleteModal(true)}
+                                >
+                                    <Icon name="trash" size={16} />
+                                    <span>Eliminar cuenta</span>
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <>
@@ -264,6 +298,43 @@ export default function UserMenu({ userName, userId, onLogout }) {
                     )}
                 </div>
             )}
+
+            {/* Delete Account Modal */}
+            <DeleteAccountModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDeleteAccount}
+                isDeleting={isDeleting}
+            />
+
+            <style>{`
+                .config-danger-zone {
+                    margin-top: var(--space-lg);
+                    padding-top: var(--space-md);
+                    border-top: 1px solid var(--border-color);
+                }
+
+                .config-delete-btn {
+                    width: 100%;
+                    padding: var(--space-sm) var(--space-md);
+                    background: transparent;
+                    border: 1px solid var(--color-error);
+                    color: var(--color-error);
+                    border-radius: var(--radius-md);
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: var(--space-xs);
+                    font-size: 0.9rem;
+                    transition: all 0.2s;
+                }
+
+                .config-delete-btn:hover {
+                    background: var(--color-error);
+                    color: white;
+                }
+            `}</style>
         </div>
     )
 }
